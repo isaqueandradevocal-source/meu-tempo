@@ -99,10 +99,7 @@ button.danger{background:#fee2e2;color:#991b1b}
  margin-top:-15px;
  margin-bottom:25px;
 }
-#nextTask strong{
- color:#b8c5d8;
- font-weight:normal;
-}
+#nextTask strong{color:#b8c5d8;font-weight:normal}
 
 .exec-buttons{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
 .exec-buttons button{padding:14px 20px;font-size:15px}
@@ -118,6 +115,7 @@ button.danger{background:#fee2e2;color:#991b1b}
 }
 #execution:fullscreen{background:#090d16}
 
+/* AJUSTES PARA CELULAR */
 @media(max-width:520px){
  main{padding:12px}
  .panel{padding:14px}
@@ -125,9 +123,64 @@ button.danger{background:#fee2e2;color:#991b1b}
  .taskname{min-width:45%}
  .addrow{flex-wrap:wrap}
  .addrow input:first-child{width:100%}
- #execution{padding:18px}
+
+ #execution{padding:18px 14px}
+
+ .exec-content{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+ }
+
+ #execTag{order:1}
+
+ #clock{
+  order:2;
+  font-size:clamp(100px,29vw,180px);
+  letter-spacing:-5px;
+  line-height:1;
+  margin:12px 0;
+ }
+
+ #execName{
+  order:3;
+  font-size:clamp(25px,7vw,34px);
+  line-height:1.2;
+  margin:10px 0 22px;
+ }
+
+ #progress{
+  order:4;
+  margin:8px 0 15px;
+ }
+
+ .progress-track{
+  order:5;
+  height:13px;
+ }
+
+ #progressPercent{
+  order:6;
+  margin-top:8px;
+  margin-bottom:20px;
+ }
+
+ #nextTask{
+  order:7;
+  width:100%;
+ }
+
+ #status{order:8}
+
+ .exec-buttons{
+  order:9;
+  gap:8px;
+ }
+
  .exec-buttons button{padding:13px 14px}
- .progress-track{height:13px}
+
+ #recordStatus{order:10}
 }
 </style>
 </head>
@@ -150,7 +203,6 @@ button.danger{background:#fee2e2;color:#991b1b}
  </div>
 
  <p class="note">Digite o nome da tarefa e a duração em minutos.</p>
-
  <div id="taskList"></div>
  <p id="emptyMessage" class="note">Nenhuma tarefa adicionada ainda.</p>
 </section>
@@ -190,13 +242,9 @@ button.danger{background:#fee2e2;color:#991b1b}
  <button id="exitFullscreen" onclick="toggleFullscreen()">Sair da tela cheia</button>
 
  <div class="exec-content">
-
   <div class="exec-tag" id="execTag">TAREFA 1</div>
-
   <h2 id="execName">Preparado?</h2>
-
   <div id="clock">00:00</div>
-
   <div id="progress">Vamos começar</div>
 
   <div class="progress-track">
@@ -204,9 +252,7 @@ button.danger{background:#fee2e2;color:#991b1b}
   </div>
 
   <div id="progressPercent">0% concluído</div>
-
   <div id="nextTask">A seguir: --</div>
-
   <div id="status"></div>
 
   <div class="exec-buttons">
@@ -217,7 +263,6 @@ button.danger{background:#fee2e2;color:#991b1b}
   </div>
 
   <div id="recordStatus"></div>
-
  </div>
 </div>
 
@@ -310,11 +355,9 @@ function addTask(){
 
 function moveTask(index,direction){
  const target=index+direction;
-
  if(target<0||target>=tasks.length)return;
 
  [tasks[index],tasks[target]]=[tasks[target],tasks[index]];
-
  saveTasks();
  renderTasks();
 }
@@ -336,7 +379,6 @@ function editTask(index){
  }
 
  tasks[index]={name:name.trim(),minutes:n};
-
  saveTasks();
  renderTasks();
 }
@@ -345,18 +387,15 @@ function deleteTask(index){
  if(!confirm("Excluir esta tarefa?"))return;
 
  tasks.splice(index,1);
-
  saveTasks();
  renderTasks();
 }
 
 function clearTasks(){
  if(!tasks.length)return;
-
  if(!confirm("Apagar todas as tarefas?"))return;
 
  tasks=[];
-
  saveTasks();
  renderTasks();
 }
@@ -371,7 +410,6 @@ function getBreak(task){
 
 async function startProgram(){
  if(!tasks.length)return;
-
  if(!confirm("Preparado para começar sua programação?"))return;
 
  currentIndex=0;
@@ -409,14 +447,12 @@ function startTask(){
  $("pauseButton").textContent="Pausar";
 
  paused=false;
-
  updateClock();
  beginTimer();
 }
 
 function startBreak(){
  const duration=getBreak(tasks[currentIndex]);
-
  currentIndex++;
 
  if(currentIndex>=tasks.length){
@@ -439,30 +475,31 @@ function startBreak(){
  $("pauseButton").textContent="Pausar";
 
  paused=false;
-
  updateClock();
  beginTimer();
 }
 
 function beginTimer(){
  clearInterval(timer);
-
  deadline=Date.now()+remaining*1000;
 
  timer=setInterval(()=>{
   if(paused)return;
 
   remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
-
   updateClock();
 
   if(remaining<=0){
    clearInterval(timer);
-   playSound();
 
    if(inBreak){
+    playSound();
     startTask();
    }else{
+    // O encerramento da última tarefa toca o som em finishProgram.
+    if(currentIndex<tasks.length-1){
+     playSound();
+    }
     startBreak();
    }
   }
@@ -481,9 +518,7 @@ function updateClock(){
   ?"Intervalo entre tarefas"
   :"Tarefa "+(currentIndex+1)+" de "+tasks.length;
 
- // Calcula o percentual concluído da etapa atual.
  const elapsed=Math.max(0,totalDuration-remaining);
-
  const percent=totalDuration>0
   ?Math.min(100,(elapsed/totalDuration)*100)
   :0;
@@ -491,8 +526,6 @@ function updateClock(){
  $("progressFill").style.width=percent+"%";
  $("progressPercent").textContent=Math.floor(percent)+"% concluído";
 
- // Mostra a próxima tarefa.
- // Durante o intervalo, currentIndex já aponta para a próxima.
  const nextIndex=inBreak?currentIndex:currentIndex+1;
 
  if(nextIndex<tasks.length){
@@ -520,12 +553,10 @@ function togglePause(){
 
  if(!paused){
   remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
-
   paused=true;
 
   $("pauseButton").textContent="Continuar";
   $("status").textContent="Cronômetro pausado.";
-
   updateClock();
  }else{
   paused=false;
@@ -629,7 +660,9 @@ async function toggleRecording(){
    const a=document.createElement("a");
    a.href=url;
    a.download="meu-tempo-"+new Date().toISOString().replace(/[:.]/g,"-")+".webm";
+   document.body.appendChild(a);
    a.click();
+   a.remove();
 
    setTimeout(()=>URL.revokeObjectURL(url),1000);
 
@@ -640,6 +673,7 @@ async function toggleRecording(){
 
    $("recordButton").textContent="Gravar vídeo";
    $("recordStatus").textContent="Gravação salva no dispositivo.";
+   mediaRecorder=null;
   };
 
   recordingStream.getVideoTracks()[0].addEventListener("ended",()=>{
@@ -654,6 +688,11 @@ async function toggleRecording(){
   $("recordStatus").textContent="Gravando a tela...";
 
  }catch(error){
+  if(recordingStream){
+   recordingStream.getTracks().forEach(track=>track.stop());
+   recordingStream=null;
+  }
+
   $("recordStatus").textContent="Gravação cancelada ou não autorizada.";
   console.log("Gravação:",error);
  }
@@ -661,12 +700,16 @@ async function toggleRecording(){
 
 function finishProgram(completed=false){
  clearInterval(timer);
+ timer=null;
 
  running=false;
  paused=false;
 
  if(mediaRecorder && mediaRecorder.state==="recording"){
   mediaRecorder.stop();
+ }else if(recordingStream){
+  recordingStream.getTracks().forEach(track=>track.stop());
+  recordingStream=null;
  }
 
  $("execution").classList.remove("active");
