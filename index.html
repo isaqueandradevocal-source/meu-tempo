@@ -4,12 +4,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
 <title>Meu Tempo</title>
-
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#172033">
-<meta name="description" content="Organize suas tarefas e aproveite melhor seu tempo.">
+<meta name="description" content="Meu Tempo — Planejador de execução.">
 
 <style>
 *{box-sizing:border-box}
@@ -37,17 +35,89 @@ button.danger{background:#fee2e2;color:#991b1b}
 .settings label{font-size:14px;color:#475569}
 .settings input{width:70px;padding:8px}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
-#execution{display:none;position:fixed;inset:0;background:#090d16;color:white;z-index:5;align-items:center;justify-content:center;text-align:center;padding:24px}
+.note{font-size:13px;color:#64748b;line-height:1.5}
+
+/* TELA DE EXECUÇÃO */
+#execution{
+ display:none;
+ position:fixed;
+ inset:0;
+ width:100%;
+ height:100%;
+ height:100dvh;
+ background:#090d16;
+ color:white;
+ z-index:9999;
+ align-items:center;
+ justify-content:center;
+ text-align:center;
+ padding:24px;
+ overflow:auto;
+}
 #execution.active{display:flex}
-.exec-content{width:100%;max-width:650px}
+.exec-content{width:100%;max-width:700px}
 .exec-tag{color:#93a4bd;text-transform:uppercase;letter-spacing:2px;font-size:13px}
 #execName{font-size:clamp(28px,6vw,48px);margin:25px 0}
-#clock{font-size:clamp(76px,17vw,140px);font-weight:bold;letter-spacing:-5px;font-variant-numeric:tabular-nums}
-#progress{color:#9caec8;margin:12px 0 28px}
+#clock{
+ font-size:clamp(76px,17vw,150px);
+ font-weight:bold;
+ letter-spacing:-5px;
+ font-variant-numeric:tabular-nums;
+ line-height:1.1;
+}
+#progress{color:#9caec8;margin:12px 0 18px}
+
+/* BARRA DE PROGRESSO */
+.progress-track{
+ width:100%;
+ height:16px;
+ background:#26334a;
+ border-radius:30px;
+ overflow:hidden;
+ margin:0 auto 28px;
+ box-shadow:inset 0 2px 5px #0005;
+}
+.progress-fill{
+ width:0%;
+ height:100%;
+ background:linear-gradient(90deg,#2563eb,#38bdf8);
+ border-radius:30px;
+ transition:width .25s linear;
+}
+#progressPercent{
+ color:#93a4bd;
+ font-size:13px;
+ margin-top:-20px;
+ margin-bottom:25px;
+}
+
+/* PRÓXIMA TAREFA */
+#nextTask{
+ color:#8290a5;
+ font-size:13px;
+ text-align:right;
+ margin-top:-15px;
+ margin-bottom:25px;
+}
+#nextTask strong{
+ color:#b8c5d8;
+ font-weight:normal;
+}
+
 .exec-buttons{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
-.exec-buttons button{padding:14px 20px}
-#status{color:#a9b8ce;margin:18px 0}
-.note{font-size:13px;color:#64748b;line-height:1.5}
+.exec-buttons button{padding:14px 20px;font-size:15px}
+#status{color:#a9b8ce;margin:18px 0;min-height:20px}
+#recordStatus{font-size:12px;color:#e5bd69;margin-top:12px}
+#exitFullscreen{
+ position:absolute;
+ top:14px;
+ right:14px;
+ background:#26334a;
+ color:white;
+ padding:10px 13px;
+}
+#execution:fullscreen{background:#090d16}
+
 @media(max-width:520px){
  main{padding:12px}
  .panel{padding:14px}
@@ -55,6 +125,9 @@ button.danger{background:#fee2e2;color:#991b1b}
  .taskname{min-width:45%}
  .addrow{flex-wrap:wrap}
  .addrow input:first-child{width:100%}
+ #execution{padding:18px}
+ .exec-buttons button{padding:13px 14px}
+ .progress-track{height:13px}
 }
 </style>
 </head>
@@ -62,434 +135,575 @@ button.danger{background:#fee2e2;color:#991b1b}
 <body>
 
 <header>
-  <h1>Meu Tempo</h1>
-  <p>Organize seu dia. Concentre-se em uma tarefa por vez.</p>
+ <h1>Meu Tempo</h1>
+ <p>Planejador de execução — Organize seu dia. Concentre-se em uma tarefa por vez.</p>
 </header>
 
 <main>
-
 <section class="panel">
-  <h2>Minha programação</h2>
+ <h2>Minha programação</h2>
 
-  <div class="addrow">
-    <input id="taskName" placeholder="Ex.: Varrer a casa">
-    <input id="taskMinutes" type="number" min="1" max="600" value="10" aria-label="Minutos">
-    <button onclick="addTask()">Adicionar</button>
-  </div>
+ <div class="addrow">
+  <input id="taskName" placeholder="Ex.: Varrer a casa">
+  <input id="taskMinutes" type="number" min="1" max="600" value="10" aria-label="Minutos">
+  <button onclick="addTask()">Adicionar</button>
+ </div>
 
-  <p class="note">Digite o nome da tarefa e a duração em minutos.</p>
+ <p class="note">Digite o nome da tarefa e a duração em minutos.</p>
 
-  <div id="taskList"></div>
-  <p id="emptyMessage" class="note">Nenhuma tarefa adicionada ainda.</p>
+ <div id="taskList"></div>
+ <p id="emptyMessage" class="note">Nenhuma tarefa adicionada ainda.</p>
 </section>
 
 <section class="panel">
-  <h2>Configurar pausas</h2>
+ <h2>Configurar pausas</h2>
 
-  <div class="settings">
-    <label>Pausa curta (min)
-      <input id="shortBreak" type="number" min="0" value="2">
-    </label>
+ <div class="settings">
+  <label>Pausa curta (min)
+   <input id="shortBreak" type="number" min="0" value="2">
+  </label>
 
-    <label>Pausa longa (min)
-      <input id="longBreak" type="number" min="0" value="5">
-    </label>
+  <label>Pausa longa (min)
+   <input id="longBreak" type="number" min="0" value="5">
+  </label>
 
-    <label>Limite (min)
-      <input id="breakLimit" type="number" min="1" value="15">
-    </label>
-  </div>
+  <label>Limite (min)
+   <input id="breakLimit" type="number" min="1" value="15">
+  </label>
+ </div>
 
-  <p class="note">
-    Tarefas abaixo do limite usam a pausa curta.
-    As demais usam a pausa longa.
-    Não há pausa após a última tarefa.
-  </p>
+ <p class="note">Tarefas abaixo do limite usam a pausa curta. As demais usam a pausa longa. Não há pausa após a última tarefa.</p>
 </section>
 
 <section class="panel">
-  <h2>Começar</h2>
+ <h2>Começar</h2>
 
-  <div class="actions">
-    <button onclick="startProgram()" id="startButton">
-      ▶ Iniciar programação
-    </button>
-
-    <button class="secondary" onclick="clearTasks()">
-      Limpar tarefas
-    </button>
-  </div>
+ <div class="actions">
+  <button onclick="startProgram()" id="startButton">▶ Iniciar programação</button>
+  <button class="secondary" onclick="clearTasks()">Limpar tarefas</button>
+ </div>
 </section>
-
 </main>
 
 <div id="execution">
-  <div class="exec-content">
 
-    <div class="exec-tag" id="execTag">TAREFA 1</div>
+ <button id="exitFullscreen" onclick="toggleFullscreen()">Sair da tela cheia</button>
 
-    <h2 id="execName">Preparado?</h2>
+ <div class="exec-content">
 
-    <div id="clock">00:00</div>
+  <div class="exec-tag" id="execTag">TAREFA 1</div>
 
-    <div id="progress">Vamos começar</div>
+  <h2 id="execName">Preparado?</h2>
 
-    <div id="status"></div>
+  <div id="clock">00:00</div>
 
-    <div class="exec-buttons">
-      <button onclick="togglePause()" id="pauseButton">Pausar</button>
-      <button class="secondary" onclick="skipStep()">Pular etapa</button>
-      <button class="danger" onclick="finishProgram()">Encerrar</button>
-    </div>
+  <div id="progress">Vamos começar</div>
 
+  <div class="progress-track">
+   <div class="progress-fill" id="progressFill"></div>
   </div>
+
+  <div id="progressPercent">0% concluído</div>
+
+  <div id="nextTask">A seguir: --</div>
+
+  <div id="status"></div>
+
+  <div class="exec-buttons">
+   <button onclick="togglePause()" id="pauseButton">Pausar</button>
+   <button class="secondary" onclick="skipStep()">Pular etapa</button>
+   <button class="secondary" onclick="toggleRecording()" id="recordButton">Gravar vídeo</button>
+   <button class="danger" onclick="finishProgram()">Encerrar</button>
+  </div>
+
+  <div id="recordStatus"></div>
+
+ </div>
 </div>
 
 <script>
-let tasks = JSON.parse(localStorage.getItem("meuTempoTasks") || "[]");
+let tasks=JSON.parse(localStorage.getItem("meuTempoTasks")||"[]");
+let currentIndex=0;
+let remaining=0;
+let totalDuration=0;
+let timer=null;
+let paused=false;
+let inBreak=false;
+let running=false;
+let audioContext=null;
+let deadline=0;
 
-let currentIndex = 0;
-let remaining = 0;
-let timer = null;
-let paused = false;
-let inBreak = false;
-let running = false;
-let audioContext = null;
+let mediaRecorder=null;
+let recordedChunks=[];
+let recordingStream=null;
 
-const $ = id => document.getElementById(id);
+const $=id=>document.getElementById(id);
 
 function saveTasks(){
-  localStorage.setItem("meuTempoTasks", JSON.stringify(tasks));
+ localStorage.setItem("meuTempoTasks",JSON.stringify(tasks));
 }
 
 function renderTasks(){
-  $("taskList").innerHTML = "";
-  $("emptyMessage").style.display = tasks.length ? "none" : "block";
+ $("taskList").innerHTML="";
+ $("emptyMessage").style.display=tasks.length?"none":"block";
 
-  tasks.forEach((task,index)=>{
-    const item = document.createElement("div");
-    item.className = "task";
+ tasks.forEach((task,index)=>{
+  const item=document.createElement("div");
+  item.className="task";
 
-    const name = document.createElement("div");
-    name.className = "taskname";
-    name.textContent = task.name;
+  const name=document.createElement("div");
+  name.className="taskname";
+  name.textContent=task.name;
 
-    const duration = document.createElement("small");
-    duration.textContent = task.minutes + " min";
+  const duration=document.createElement("small");
+  duration.textContent=task.minutes+" min";
 
-    const up = document.createElement("button");
-    up.className = "secondary";
-    up.textContent = "↑";
-    up.title = "Mover para cima";
-    up.disabled = index === 0;
-    up.onclick = ()=>moveTask(index,-1);
+  const up=document.createElement("button");
+  up.className="secondary";
+  up.textContent="↑";
+  up.disabled=index===0;
+  up.onclick=()=>moveTask(index,-1);
 
-    const down = document.createElement("button");
-    down.className = "secondary";
-    down.textContent = "↓";
-    down.title = "Mover para baixo";
-    down.disabled = index === tasks.length-1;
-    down.onclick = ()=>moveTask(index,1);
+  const down=document.createElement("button");
+  down.className="secondary";
+  down.textContent="↓";
+  down.disabled=index===tasks.length-1;
+  down.onclick=()=>moveTask(index,1);
 
-    const edit = document.createElement("button");
-    edit.className = "secondary";
-    edit.textContent = "Editar";
-    edit.onclick = ()=>editTask(index);
+  const edit=document.createElement("button");
+  edit.className="secondary";
+  edit.textContent="Editar";
+  edit.onclick=()=>editTask(index);
 
-    const del = document.createElement("button");
-    del.className = "danger";
-    del.textContent = "Excluir";
-    del.onclick = ()=>deleteTask(index);
+  const del=document.createElement("button");
+  del.className="danger";
+  del.textContent="Excluir";
+  del.onclick=()=>deleteTask(index);
 
-    item.append(name,duration,up,down,edit,del);
-    $("taskList").appendChild(item);
-  });
+  item.append(name,duration,up,down,edit,del);
+  $("taskList").appendChild(item);
+ });
 
-  $("startButton").disabled = !tasks.length || running;
+ $("startButton").disabled=!tasks.length||running;
 }
 
 function addTask(){
-  const name = $("taskName").value.trim();
-  const minutes = Number($("taskMinutes").value);
+ const name=$("taskName").value.trim();
+ const minutes=Number($("taskMinutes").value);
 
-  if(!name){
-    alert("Digite o nome da tarefa.");
-    return;
-  }
+ if(!name){
+  alert("Digite o nome da tarefa.");
+  return;
+ }
 
-  if(!Number.isInteger(minutes) || minutes<1 || minutes>600){
-    alert("Informe uma duração entre 1 e 600 minutos.");
-    return;
-  }
+ if(!Number.isInteger(minutes)||minutes<1||minutes>600){
+  alert("Informe uma duração entre 1 e 600 minutos.");
+  return;
+ }
 
-  tasks.push({name,minutes});
-  $("taskName").value = "";
-  saveTasks();
-  renderTasks();
-  $("taskName").focus();
+ tasks.push({name,minutes});
+ $("taskName").value="";
+ saveTasks();
+ renderTasks();
+ $("taskName").focus();
 }
 
 function moveTask(index,direction){
-  const target = index+direction;
+ const target=index+direction;
 
-  if(target<0 || target>=tasks.length)return;
+ if(target<0||target>=tasks.length)return;
 
-  [tasks[index],tasks[target]]=[tasks[target],tasks[index]];
+ [tasks[index],tasks[target]]=[tasks[target],tasks[index]];
 
-  saveTasks();
-  renderTasks();
+ saveTasks();
+ renderTasks();
 }
 
 function editTask(index){
-  const task = tasks[index];
+ const task=tasks[index];
 
-  const name = prompt("Nome da tarefa:",task.name);
-  if(name===null)return;
+ const name=prompt("Nome da tarefa:",task.name);
+ if(name===null)return;
 
-  const minutes = prompt("Duração em minutos:",task.minutes);
-  if(minutes===null)return;
+ const minutes=prompt("Duração em minutos:",task.minutes);
+ if(minutes===null)return;
 
-  const n = Number(minutes);
+ const n=Number(minutes);
 
-  if(!name.trim() || !Number.isInteger(n) || n<1 || n>600){
-    alert("Nome ou duração inválidos.");
-    return;
-  }
+ if(!name.trim()||!Number.isInteger(n)||n<1||n>600){
+  alert("Nome ou duração inválidos.");
+  return;
+ }
 
-  tasks[index]={name:name.trim(),minutes:n};
+ tasks[index]={name:name.trim(),minutes:n};
 
-  saveTasks();
-  renderTasks();
+ saveTasks();
+ renderTasks();
 }
 
 function deleteTask(index){
-  if(!confirm("Excluir esta tarefa?"))return;
+ if(!confirm("Excluir esta tarefa?"))return;
 
-  tasks.splice(index,1);
+ tasks.splice(index,1);
 
-  saveTasks();
-  renderTasks();
+ saveTasks();
+ renderTasks();
 }
 
 function clearTasks(){
-  if(!tasks.length)return;
+ if(!tasks.length)return;
 
-  if(!confirm("Apagar todas as tarefas?"))return;
+ if(!confirm("Apagar todas as tarefas?"))return;
 
-  tasks=[];
-  saveTasks();
-  renderTasks();
+ tasks=[];
+
+ saveTasks();
+ renderTasks();
 }
 
 function getBreak(task){
-  const limit = Math.max(1,Number($("breakLimit").value)||15);
+ const limit=Math.max(1,Number($("breakLimit").value)||15);
+ const short=Math.max(0,Number($("shortBreak").value)||0);
+ const long=Math.max(0,Number($("longBreak").value)||0);
 
-  return task.minutes < limit
-    ? Math.max(0,Number($("shortBreak").value)||0)
-    : Math.max(0,Number($("longBreak").value)||0);
+ return task.minutes<limit?short:long;
 }
 
-function startProgram(){
-  if(!tasks.length)return;
+async function startProgram(){
+ if(!tasks.length)return;
 
-  if(!confirm("Preparado para começar sua programação?"))return;
+ if(!confirm("Preparado para começar sua programação?"))return;
 
-  currentIndex=0;
-  running=true;
-  paused=false;
-  inBreak=false;
+ currentIndex=0;
+ running=true;
+ paused=false;
+ inBreak=false;
 
-  $("execution").classList.add("active");
-  $("startButton").disabled=true;
+ $("execution").classList.add("active");
+ $("startButton").disabled=true;
 
-  startTask();
+ try{
+  if(!document.fullscreenElement && $("execution").requestFullscreen){
+   await $("execution").requestFullscreen();
+  }
+ }catch(error){
+  console.log("Tela cheia não disponível:",error);
+ }
+
+ startTask();
 }
 
 function startTask(){
-  if(currentIndex>=tasks.length){
-    finishProgram(true);
-    return;
-  }
+ if(currentIndex>=tasks.length){
+  finishProgram(true);
+  return;
+ }
 
-  inBreak=false;
-  remaining=tasks[currentIndex].minutes*60;
+ inBreak=false;
+ remaining=tasks[currentIndex].minutes*60;
+ totalDuration=remaining;
 
-  $("execTag").textContent="TAREFA "+(currentIndex+1)+" DE "+tasks.length;
-  $("execName").textContent=tasks[currentIndex].name;
-  $("status").textContent="Concentre-se nesta tarefa.";
-  $("pauseButton").textContent="Pausar";
+ $("execTag").textContent="TAREFA "+(currentIndex+1)+" DE "+tasks.length;
+ $("execName").textContent=tasks[currentIndex].name;
+ $("status").textContent="Concentre-se nesta tarefa.";
+ $("pauseButton").textContent="Pausar";
 
-  paused=false;
+ paused=false;
 
-  updateClock();
-  beginTimer();
+ updateClock();
+ beginTimer();
 }
 
 function startBreak(){
-  const duration=getBreak(tasks[currentIndex]);
+ const duration=getBreak(tasks[currentIndex]);
 
-  currentIndex++;
+ currentIndex++;
 
-  if(currentIndex>=tasks.length){
-    finishProgram(true);
-    return;
-  }
+ if(currentIndex>=tasks.length){
+  finishProgram(true);
+  return;
+ }
 
-  if(duration<=0){
-    startTask();
-    return;
-  }
+ if(duration<=0){
+  startTask();
+  return;
+ }
 
-  inBreak=true;
-  remaining=duration*60;
+ inBreak=true;
+ remaining=duration*60;
+ totalDuration=remaining;
 
-  $("execTag").textContent="INTERVALO";
-  $("execName").textContent="Hora de respirar";
-  $("status").textContent="Descanse. A próxima tarefa virá em seguida.";
-  $("pauseButton").textContent="Pausar";
+ $("execTag").textContent="INTERVALO";
+ $("execName").textContent="Hora de respirar";
+ $("status").textContent="Descanse. A próxima tarefa virá em seguida.";
+ $("pauseButton").textContent="Pausar";
 
-  paused=false;
+ paused=false;
 
-  updateClock();
-  beginTimer();
+ updateClock();
+ beginTimer();
 }
 
 function beginTimer(){
-  clearInterval(timer);
+ clearInterval(timer);
 
-  timer=setInterval(()=>{
-    if(paused)return;
+ deadline=Date.now()+remaining*1000;
 
-    remaining--;
-    updateClock();
+ timer=setInterval(()=>{
+  if(paused)return;
 
-    if(remaining<=0){
-      clearInterval(timer);
-      playSound();
+  remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
 
-      if(inBreak){
-        startTask();
-      }else{
-        startBreak();
-      }
-    }
-  },1000);
+  updateClock();
+
+  if(remaining<=0){
+   clearInterval(timer);
+   playSound();
+
+   if(inBreak){
+    startTask();
+   }else{
+    startBreak();
+   }
+  }
+ },250);
 }
 
 function updateClock(){
-  const m=Math.floor(remaining/60);
-  const s=remaining%60;
+ const m=Math.floor(remaining/60);
+ const s=remaining%60;
 
-  $("clock").textContent=
-    String(m).padStart(2,"0")+":"+
-    String(s).padStart(2,"0");
+ $("clock").textContent=
+  String(m).padStart(2,"0")+":"+
+  String(s).padStart(2,"0");
 
-  $("progress").textContent=inBreak
-    ? "Intervalo entre tarefas"
-    : "Tarefa "+(currentIndex+1)+" de "+tasks.length;
+ $("progress").textContent=inBreak
+  ?"Intervalo entre tarefas"
+  :"Tarefa "+(currentIndex+1)+" de "+tasks.length;
+
+ // Calcula o percentual concluído da etapa atual.
+ const elapsed=Math.max(0,totalDuration-remaining);
+
+ const percent=totalDuration>0
+  ?Math.min(100,(elapsed/totalDuration)*100)
+  :0;
+
+ $("progressFill").style.width=percent+"%";
+ $("progressPercent").textContent=Math.floor(percent)+"% concluído";
+
+ // Mostra a próxima tarefa.
+ // Durante o intervalo, currentIndex já aponta para a próxima.
+ const nextIndex=inBreak?currentIndex:currentIndex+1;
+
+ if(nextIndex<tasks.length){
+  $("nextTask").innerHTML=
+   "A seguir: <strong>"+escapeHTML(tasks[nextIndex].name)+"</strong>";
+ }else{
+  $("nextTask").textContent="Última tarefa da programação";
+ }
+}
+
+function escapeHTML(text){
+ return String(text).replace(/[&<>"']/g,function(char){
+  return {
+   "&":"&amp;",
+   "<":"&lt;",
+   ">":"&gt;",
+   '"':"&quot;",
+   "'":"&#39;"
+  }[char];
+ });
 }
 
 function togglePause(){
-  if(!running)return;
+ if(!running)return;
 
-  paused=!paused;
+ if(!paused){
+  remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
 
-  $("pauseButton").textContent=paused?"Continuar":"Pausar";
+  paused=true;
 
-  $("status").textContent=paused
-    ?"Cronômetro pausado."
-    :"Continue no seu ritmo.";
+  $("pauseButton").textContent="Continuar";
+  $("status").textContent="Cronômetro pausado.";
+
+  updateClock();
+ }else{
+  paused=false;
+  deadline=Date.now()+remaining*1000;
+
+  $("pauseButton").textContent="Pausar";
+  $("status").textContent="Continue no seu ritmo.";
+ }
 }
 
 function skipStep(){
-  if(!running)return;
+ if(!running)return;
 
-  clearInterval(timer);
+ clearInterval(timer);
 
-  if(inBreak){
-    startTask();
-  }else{
-    startBreak();
-  }
+ if(inBreak){
+  startTask();
+ }else{
+  startBreak();
+ }
 }
 
 function playSound(){
-  try{
-    const AudioCtx=window.AudioContext||window.webkitAudioContext;
+ try{
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+  if(!AudioCtx)return;
 
-    if(!AudioCtx)return;
+  audioContext=audioContext||new AudioCtx();
 
-    audioContext=audioContext||new AudioCtx();
-
-    if(audioContext.state==="suspended"){
-      audioContext.resume();
-    }
-
-    [0,0.22,0.44].forEach(delay=>{
-      const osc=audioContext.createOscillator();
-      const gain=audioContext.createGain();
-
-      osc.connect(gain);
-      gain.connect(audioContext.destination);
-
-      osc.frequency.value=880;
-
-      gain.gain.setValueAtTime(
-        0.001,audioContext.currentTime+delay
-      );
-
-      gain.gain.exponentialRampToValueAtTime(
-        0.25,audioContext.currentTime+delay+0.02
-      );
-
-      gain.gain.exponentialRampToValueAtTime(
-        0.001,audioContext.currentTime+delay+0.18
-      );
-
-      osc.start(audioContext.currentTime+delay);
-      osc.stop(audioContext.currentTime+delay+0.2);
-    });
-
-  }catch(e){
-    console.log("Som indisponível",e);
+  if(audioContext.state==="suspended"){
+   audioContext.resume();
   }
+
+  [0,0.22,0.44].forEach(delay=>{
+   const osc=audioContext.createOscillator();
+   const gain=audioContext.createGain();
+
+   osc.connect(gain);
+   gain.connect(audioContext.destination);
+
+   osc.frequency.value=880;
+
+   gain.gain.setValueAtTime(.001,audioContext.currentTime+delay);
+   gain.gain.exponentialRampToValueAtTime(.25,audioContext.currentTime+delay+.02);
+   gain.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+delay+.18);
+
+   osc.start(audioContext.currentTime+delay);
+   osc.stop(audioContext.currentTime+delay+.2);
+  });
+ }catch(e){
+  console.log("Som indisponível",e);
+ }
+}
+
+async function toggleFullscreen(){
+ try{
+  if(document.fullscreenElement){
+   await document.exitFullscreen();
+  }else if($("execution").requestFullscreen){
+   await $("execution").requestFullscreen();
+  }
+ }catch(e){
+  console.log(e);
+ }
+}
+
+async function toggleRecording(){
+ if(mediaRecorder && mediaRecorder.state==="recording"){
+  mediaRecorder.stop();
+  return;
+ }
+
+ if(!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia){
+  alert("A gravação de tela não está disponível neste navegador.");
+  return;
+ }
+
+ try{
+  recordingStream=await navigator.mediaDevices.getDisplayMedia({
+   video:{frameRate:30},
+   audio:false
+  });
+
+  recordedChunks=[];
+
+  const mimeType=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+   ?"video/webm;codecs=vp9":"video/webm";
+
+  mediaRecorder=new MediaRecorder(recordingStream,{mimeType});
+
+  mediaRecorder.ondataavailable=e=>{
+   if(e.data.size>0){
+    recordedChunks.push(e.data);
+   }
+  };
+
+  mediaRecorder.onstop=()=>{
+   const blob=new Blob(recordedChunks,{type:"video/webm"});
+   const url=URL.createObjectURL(blob);
+
+   const a=document.createElement("a");
+   a.href=url;
+   a.download="meu-tempo-"+new Date().toISOString().replace(/[:.]/g,"-")+".webm";
+   a.click();
+
+   setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+   if(recordingStream){
+    recordingStream.getTracks().forEach(track=>track.stop());
+    recordingStream=null;
+   }
+
+   $("recordButton").textContent="Gravar vídeo";
+   $("recordStatus").textContent="Gravação salva no dispositivo.";
+  };
+
+  recordingStream.getVideoTracks()[0].addEventListener("ended",()=>{
+   if(mediaRecorder && mediaRecorder.state==="recording"){
+    mediaRecorder.stop();
+   }
+  });
+
+  mediaRecorder.start();
+
+  $("recordButton").textContent="Parar gravação";
+  $("recordStatus").textContent="Gravando a tela...";
+
+ }catch(error){
+  $("recordStatus").textContent="Gravação cancelada ou não autorizada.";
+  console.log("Gravação:",error);
+ }
 }
 
 function finishProgram(completed=false){
-  clearInterval(timer);
+ clearInterval(timer);
 
-  running=false;
-  paused=false;
+ running=false;
+ paused=false;
 
-  $("execution").classList.remove("active");
-  $("startButton").disabled=!tasks.length;
+ if(mediaRecorder && mediaRecorder.state==="recording"){
+  mediaRecorder.stop();
+ }
 
-  if(completed){
-    playSound();
-    alert("Parabéns! Você concluiu sua programação.");
-  }
+ $("execution").classList.remove("active");
+ $("startButton").disabled=!tasks.length;
+
+ $("progressFill").style.width="0%";
+ $("progressPercent").textContent="0% concluído";
+ $("nextTask").textContent="A seguir: --";
+
+ if(document.fullscreenElement){
+  document.exitFullscreen().catch(()=>{});
+ }
+
+ if(completed){
+  playSound();
+  alert("Parabéns! Você concluiu sua programação.");
+ }
 }
 
-/* Conexão com o sistema PWA e funcionamento offline */
+document.addEventListener("fullscreenchange",()=>{
+ $("exitFullscreen").textContent=document.fullscreenElement
+  ?"Sair da tela cheia":"Ativar tela cheia";
+});
 
 if("serviceWorker" in navigator){
-  window.addEventListener("load",()=>{
-    navigator.serviceWorker.register("./sw.js")
-      .then(()=>{
-        console.log("Meu Tempo: sistema offline conectado!");
-      })
-      .catch(error=>{
-        console.error("Erro no sistema offline:",error);
-      });
-  });
+ window.addEventListener("load",()=>{
+  navigator.serviceWorker.register("./sw.js")
+   .then(()=>console.log("Meu Tempo: sistema offline conectado!"))
+   .catch(error=>console.error("Erro no sistema offline:",error));
+ });
 }
 
 $("taskName").addEventListener("keydown",e=>{
-  if(e.key==="Enter")addTask();
+ if(e.key==="Enter")addTask();
 });
 
 renderTasks();
 </script>
-
 </body>
 </html>
