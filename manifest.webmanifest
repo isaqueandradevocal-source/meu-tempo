@@ -1,0 +1,13 @@
+
+{
+  "name": "Meu Tempo",
+  "short_name": "Meu Tempo",
+  "description": "Organize suas tarefas e aproveite melhor seu tempo.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#090d16",
+  "theme_color": "#172033",
+  "lang": "pt-BR"
+}
