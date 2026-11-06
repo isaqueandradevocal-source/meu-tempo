@@ -1,4 +1,628 @@
-async function toggleFullscreen(){
+```html
+ <div class="exec-content">
+  <div id="execTag" class="exec-tag">TAREFA</div>
+  <h2 id="execName">Sua tarefa</h2>
+  <div id="breakMessage"></div>
+  <div id="clock">00:00</div>
+  <p id="progress">Tarefa 1 de 1</p>
+  <div class="progress-track">
+   <div id="progressFill" class="progress-fill"></div>
+  </div>
+  <p id="progressPercent">0% concluído</p>
+  <p id="nextTask">A seguir: --</p>
+  <div class="exec-buttons">
+   <button onclick="togglePause()" id="pauseButton">Pausar</button>
+   <button onclick="skipStep()" class="secondary">Pular etapa</button>
+   <button onclick="finishProgram()" class="danger">Encerrar</button>
+   <button onclick="toggleRecording()" id="recordButton" class="secondary">Gravar vídeo</button>
+  </div>
+  <p id="status">Concentre-se nesta tarefa.</p>
+  <p id="recordStatus"></p>
+ </div>
+</div>
+
+<script>
+let tasks=JSON.parse(localStorage.getItem("meuTempoTasks")||"[]");
+let historyEntries=JSON.parse(localStorage.getItem("meuTempoHistory")||"[]");
+let dailyStats=JSON.parse(localStorage.getItem("meuTempoDailyStats")||"{}");
+
+let currentIndex=0;
+let remaining=0;
+let totalDuration=0;
+let timer=null;
+let running=false;
+let paused=false;
+let inBreak=false;
+let deadline=0;
+let taskActiveStartedAt=0;
+let taskElapsedMs=0;
+let mediaRecorder=null;
+let recordedChunks=[];
+let recordingStream=null;
+let lastBreakMessage="";
+
+const $=id=>document.getElementById(id);
+
+const activityOptions={
+ "Casa":["Varrer a casa","Passar pano","Tirar poeira","Lavar a louça","Organizar um cômodo","Arrumar a cama"],
+ "Área externa":["Molhar plantas","Varrer o passeio","Limpar quintal","Recolher folhas","Organizar área externa"],
+ "Cuidados pessoais":["Tomar banho","Higiene pessoal","Organizar roupas","Cuidar de si","Fazer uma pausa para descanso"],
+ "Família":["Brincar com Theo","Tempo com a família","Conversar com Mille","Organizar coisas do Theo"],
+ "Trabalho":["Atender clientes","Organizar loja","Conferir produtos","Resolver pendências","Fazer relatórios"],
+ "Estudos":["Estudar Pedagogia","Assistir aula","Fazer atividade","Revisar conteúdo","Ler um livro"],
+ "Espiritualidade":["Ler a Bíblia","Preparar reunião","Estudar publicação","Meditar em um texto bíblico"],
+ "Exercícios":["Caminhar","Correr","Treino físico","Fazer alongamento"],
+ "Outros":["Outra atividade"]
+};
+
+const breakMessages=[
+ "Você concluiu mais uma etapa. Bom trabalho!",
+ "Mais uma tarefa vencida. Aproveite sua pausa.",
+ "Seu esforço está construindo bons resultados.",
+ "Está na hora de beber uma água.",
+ "Alongue um pouco o corpo e relaxe os ombros.",
+ "Respire fundo algumas vezes. Você não precisa ter pressa.",
+ "Observe o céu por alguns instantes.",
+ "Repare nos sons ao seu redor.",
+ "Aproveite esse momento para observar a natureza.",
+ "Leia um pequeno trecho de um livro.",
+ "Aprenda uma coisa nova hoje, mesmo que seja pequena.",
+ "Releia uma frase que tenha significado para você.",
+ "Pequenos passos também levam longe.",
+ "Não precisa fazer tudo de uma vez. Continue.",
+ "Disciplina é continuar mesmo quando a motivação diminui.",
+ "O que você fez bem nesta última etapa?",
+ "Aproveite o silêncio para organizar os pensamentos.",
+ "Lembre-se do propósito por trás do que está fazendo."
+];
+
+function updateActivitySuggestions(){
+ const category=$("taskCategory").value;
+ const select=$("activitySuggestion");
+ select.innerHTML="";
+
+ const first=document.createElement("option");
+ first.value="";
+ first.textContent="Escolha uma sugestão (opcional)";
+ select.appendChild(first);
+
+ (activityOptions[category]||[]).forEach(activity=>{
+  const option=document.createElement("option");
+  option.value=activity;
+  option.textContent=activity;
+  select.appendChild(option);
+ });
+}
+
+function saveTasks(){
+ localStorage.setItem("meuTempoTasks",JSON.stringify(tasks));
+}
+
+function saveHistory(){
+ localStorage.setItem("meuTempoHistory",JSON.stringify(historyEntries));
+}
+
+function saveDailyStats(){
+ localStorage.setItem("meuTempoDailyStats",JSON.stringify(dailyStats));
+}
+
+function todayKey(){
+ const now=new Date();
+ const year=now.getFullYear();
+ const month=String(now.getMonth()+1).padStart(2,"0");
+ const day=String(now.getDate()).padStart(2,"0");
+ return `${year}-${month}-${day}`;
+}
+
+function getTodayStats(){
+ const key=todayKey();
+
+ if(!dailyStats[key]){
+  dailyStats[key]={completed:0,minutes:0};
+ }
+
+ return dailyStats[key];
+}
+
+function renderHome(){
+ $("homePlanned").textContent=tasks.length;
+
+ const stats=getTodayStats();
+
+ $("homeCompleted").textContent=stats.completed||0;
+ $("homeTime").textContent=(stats.minutes||0)+" min";
+}
+
+function showPage(page){
+ $("homePage").style.display=page==="home"?"block":"none";
+ $("plannerPage").style.display=page==="planner"?"block":"none";
+ $("historyPage").style.display=page==="history"?"block":"none";
+
+ $("homeTab").classList.toggle("active",page==="home");
+ $("plannerTab").classList.toggle("active",page==="planner");
+ $("historyTab").classList.toggle("active",page==="history");
+
+ if(page==="home")renderHome();
+ if(page==="history")renderHistory();
+}
+
+function beginFromHome(){
+ if(!tasks.length){
+  showPage("planner");
+  alert("Adicione pelo menos uma tarefa antes de começar.");
+  return;
+ }
+
+ showPage("planner");
+ startProgram();
+}
+
+function renderTasks(){
+ const list=$("taskList");
+ list.innerHTML="";
+
+ $("emptyMessage").style.display=tasks.length?"none":"block";
+
+ tasks.forEach((task,index)=>{
+  const row=document.createElement("div");
+  row.className="task";
+
+  const name=document.createElement("div");
+  name.className="taskname";
+  name.textContent=task.name;
+
+  const duration=document.createElement("small");
+  duration.textContent=task.minutes+" min";
+
+  const up=document.createElement("button");
+  up.className="secondary";
+  up.textContent="↑";
+  up.title="Mover para cima";
+  up.disabled=index===0;
+  up.onclick=()=>moveTask(index,-1);
+
+  const down=document.createElement("button");
+  down.className="secondary";
+  down.textContent="↓";
+  down.title="Mover para baixo";
+  down.disabled=index===tasks.length-1;
+  down.onclick=()=>moveTask(index,1);
+
+  const edit=document.createElement("button");
+  edit.className="secondary";
+  edit.textContent="Editar";
+  edit.onclick=()=>editTask(index);
+
+  const remove=document.createElement("button");
+  remove.className="danger";
+  remove.textContent="Excluir";
+  remove.onclick=()=>deleteTask(index);
+
+  row.append(name,duration,up,down,edit,remove);
+  list.appendChild(row);
+ });
+
+ $("startButton").disabled=!tasks.length;
+ renderHome();
+}
+
+function addTask(){
+ const name=$("taskName").value.trim();
+ const minutes=Number($("taskMinutes").value);
+ const recordHistory=$("taskHistory").value==="sim";
+
+ if(!name){
+  alert("Digite o nome da atividade.");
+  $("taskName").focus();
+  return;
+ }
+
+ if(!Number.isInteger(minutes)||minutes<1||minutes>600){
+  alert("Informe uma duração entre 1 e 600 minutos.");
+  $("taskMinutes").focus();
+  return;
+ }
+
+ tasks.push({
+  name,
+  minutes,
+  recordHistory
+ });
+
+ saveTasks();
+ renderTasks();
+
+ $("taskName").value="";
+ $("taskMinutes").value=10;
+ $("taskHistory").value="nao";
+ $("activitySuggestion").value="";
+ $("taskName").focus();
+}
+
+function moveTask(index,direction){
+ const target=index+direction;
+
+ if(target<0||target>=tasks.length)return;
+
+ [tasks[index],tasks[target]]=[tasks[target],tasks[index]];
+
+ saveTasks();
+ renderTasks();
+ renderHome();
+}
+
+function editTask(index){
+ const task=tasks[index];
+ const name=prompt("Nome da atividade:",task.name);
+
+ if(name===null)return;
+
+ const minutes=prompt("Duração em minutos:",task.minutes);
+
+ if(minutes===null)return;
+
+ const n=Number(minutes);
+
+ if(!name.trim()||!Number.isInteger(n)||n<1||n>600){
+  alert("Nome ou duração inválidos.");
+  return;
+ }
+
+ const recordHistory=confirm("Registrar esta atividade no histórico?\n\nOK = Sim\nCancelar = Não");
+
+ tasks[index]={
+  ...task,
+  name:name.trim(),
+  minutes:n,
+  recordHistory
+ };
+
+ saveTasks();
+ renderTasks();
+}
+
+function deleteTask(index){
+ if(!confirm("Excluir esta atividade?"))return;
+
+ tasks.splice(index,1);
+ saveTasks();
+ renderTasks();
+ renderHome();
+}
+
+function clearTasks(){
+ if(!tasks.length)return;
+ if(!confirm("Apagar todas as tarefas?"))return;
+
+ tasks=[];
+ saveTasks();
+ renderTasks();
+ renderHome();
+}
+
+function getBreak(task){
+ const limit=Math.max(1,Number($("breakLimit").value)||15);
+ const short=Math.max(0,Number($("shortBreak").value)||0);
+ const long=Math.max(0,Number($("longBreak").value)||0);
+
+ return task.minutes<limit?short:long;
+}
+
+function getBreakMessage(){
+ let options=breakMessages.filter(message=>message!==lastBreakMessage);
+
+ if(!options.length)options=breakMessages;
+
+ const message=options[Math.floor(Math.random()*options.length)];
+ lastBreakMessage=message;
+
+ return message;
+}function recordCompletedTask(){
+ const task=tasks[currentIndex];
+ if(!task)return;
+
+ const elapsed=Math.max(0,Math.round((taskElapsedMs+(taskActiveStartedAt?Date.now()-taskActiveStartedAt:0))/60000));
+
+ const stats=getTodayStats();
+ stats.completed++;
+ stats.minutes+=elapsed;
+ saveDailyStats();
+
+ if(task.recordHistory===true){
+  historyEntries.push({
+   name:task.name,
+   minutes:task.minutes,
+   elapsed,
+   date:new Date().toISOString(),
+   dateKey:todayKey()
+  });
+
+  saveHistory();
+ }
+
+ taskActiveStartedAt=0;
+ taskElapsedMs=0;
+
+ renderHome();
+ renderHistory();
+}
+
+function renderHistory(){
+ const list=$("historyList");
+ list.innerHTML="";
+
+ const total=historyEntries.reduce((sum,item)=>sum+(Number(item.elapsed)||Number(item.minutes)||0),0);
+
+ $("historyCount").textContent=historyEntries.length;
+ $("historyTotalTime").textContent=total+" min";
+
+ $("historyEmpty").style.display=historyEntries.length?"none":"block";
+
+ const grouped={};
+
+ historyEntries.slice().reverse().forEach(item=>{
+  const date=new Date(item.date);
+  const key=item.dateKey||date.toLocaleDateString("sv-SE");
+
+  if(!grouped[key])grouped[key]=[];
+  grouped[key].push(item);
+ });
+
+ Object.keys(grouped).forEach(key=>{
+  const dateTitle=document.createElement("h3");
+  dateTitle.className="history-date";
+
+  const parts=key.split("-");
+  dateTitle.textContent=parts.length===3
+   ?new Date(Number(parts[0]),Number(parts[1])-1,Number(parts[2])).toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})
+   :key;
+
+  list.appendChild(dateTitle);
+
+  grouped[key].forEach(item=>{
+   const entry=document.createElement("div");
+   entry.className="history-entry";
+
+   const title=document.createElement("div");
+   title.className="history-entry-title";
+   title.textContent=item.name;
+
+   const meta=document.createElement("div");
+   meta.className="history-meta";
+   meta.textContent=new Date(item.date).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+
+   const times=document.createElement("div");
+   times.className="history-times";
+
+   const planned=document.createElement("span");
+   planned.textContent="Tempo previsto: "+item.minutes+" min";
+
+   const actual=document.createElement("span");
+   actual.textContent="Tempo realizado: "+(item.elapsed??item.minutes)+" min";
+
+   times.append(planned,actual);
+   entry.append(title,meta,times);
+   list.appendChild(entry);
+  });
+ });
+}
+
+async function startProgram(){
+ if(!tasks.length)return;
+
+ if(!confirm("Preparado para começar sua programação?"))return;
+
+ currentIndex=0;
+ running=true;
+ paused=false;
+ inBreak=false;
+
+ $("execution").classList.add("active");
+ $("startButton").disabled=true;
+
+ try{
+  if(!document.fullscreenElement&&$("execution").requestFullscreen){
+   await $("execution").requestFullscreen();
+  }
+ }catch(error){
+  console.log("Tela cheia não disponível:",error);
+ }
+
+ startTask();
+}
+
+function startTask(){
+ if(currentIndex>=tasks.length){
+  finishProgram(true);
+  return;
+ }
+
+ inBreak=false;
+ taskElapsedMs=0;
+ taskActiveStartedAt=Date.now();
+
+ $("execution").classList.remove("break-mode");
+ $("breakMessage").style.display="none";
+
+ remaining=tasks[currentIndex].minutes*60;
+ totalDuration=remaining;
+
+ $("execTag").textContent="TAREFA "+(currentIndex+1)+" DE "+tasks.length;
+ $("execName").textContent=tasks[currentIndex].name;
+ $("status").textContent="Concentre-se nesta tarefa.";
+ $("pauseButton").textContent="Pausar";
+
+ paused=false;
+
+ updateClock();
+ beginTimer();
+}
+
+function startBreak(){
+ taskActiveStartedAt=0;
+
+ const duration=getBreak(tasks[currentIndex]);
+ currentIndex++;
+
+ if(currentIndex>=tasks.length){
+  finishProgram(true);
+  return;
+ }
+
+ if(duration<=0){
+  startTask();
+  return;
+ }
+
+ inBreak=true;
+
+ $("execution").classList.add("break-mode");
+
+ remaining=duration*60;
+ totalDuration=remaining;
+
+ $("execTag").textContent="INTERVALO";
+ $("execName").textContent="Hora de respirar";
+ $("breakMessage").textContent=getBreakMessage();
+ $("breakMessage").style.display="block";
+ $("status").textContent="Descanse. A próxima tarefa virá em seguida.";
+ $("pauseButton").textContent="Pausar";
+
+ paused=false;
+
+ updateClock();
+ beginTimer();
+}
+
+function beginTimer(){
+ clearInterval(timer);
+
+ deadline=Date.now()+remaining*1000;
+
+ timer=setInterval(()=>{
+  if(paused)return;
+
+  remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
+
+  updateClock();
+
+  if(remaining<=0){
+   clearInterval(timer);
+
+   if(inBreak){
+    playSound();
+    startTask();
+   }else{
+    recordCompletedTask();
+
+    if(currentIndex<tasks.length-1)playSound();
+
+    startBreak();
+   }
+  }
+ },250);
+}
+
+function updateClock(){
+ const m=Math.floor(remaining/60);
+ const s=remaining%60;
+
+ $("clock").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+
+ $("progress").textContent=inBreak
+  ?"Intervalo entre tarefas"
+  :"Tarefa "+(currentIndex+1)+" de "+tasks.length;
+
+ const elapsed=Math.max(0,totalDuration-remaining);
+ const percent=totalDuration>0?Math.min(100,(elapsed/totalDuration)*100):0;
+
+ $("progressFill").style.width=percent+"%";
+ $("progressPercent").textContent=Math.floor(percent)+"% concluído";
+
+ const nextIndex=inBreak?currentIndex:currentIndex+1;
+
+ if(nextIndex<tasks.length){
+  $("nextTask").textContent="A seguir: ";
+
+  const strong=document.createElement("strong");
+  strong.textContent=tasks[nextIndex].name;
+
+  $("nextTask").appendChild(strong);
+ }else{
+  $("nextTask").textContent="Última tarefa da programação";
+ }
+}
+
+function togglePause(){
+ if(!running)return;
+
+ if(!paused){
+  remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
+
+  if(!inBreak&&taskActiveStartedAt){
+   taskElapsedMs+=Date.now()-taskActiveStartedAt;
+   taskActiveStartedAt=0;
+  }
+
+  paused=true;
+
+  $("pauseButton").textContent="Continuar";
+  $("status").textContent="Cronômetro pausado.";
+
+  updateClock();
+ }else{
+  paused=false;
+  deadline=Date.now()+remaining*1000;
+
+  if(!inBreak)taskActiveStartedAt=Date.now();
+
+  $("pauseButton").textContent="Pausar";
+  $("status").textContent="Continue no seu ritmo.";
+ }
+}
+
+function skipStep(){
+ if(!running)return;
+
+ clearInterval(timer);
+
+ if(inBreak){
+  startTask();
+ }else{
+  startBreak();
+ }
+}
+
+function playSound(){
+ try{
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+
+  if(!AudioCtx)return;
+
+  audioContext=audioContext||new AudioCtx();
+
+  if(audioContext.state==="suspended")audioContext.resume();
+
+  [0,.22,.44].forEach(delay=>{
+   const osc=audioContext.createOscillator();
+   const gain=audioContext.createGain();
+
+   osc.connect(gain);
+   gain.connect(audioContext.destination);
+
+   osc.frequency.value=880;
+
+   gain.gain.setValueAtTime(.001,audioContext.currentTime+delay);
+   gain.gain.exponentialRampToValueAtTime(.25,audioContext.currentTime+delay+.02);
+   gain.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+delay+.18);
+
+   osc.start(audioContext.currentTime+delay);
+   osc.stop(audioContext.currentTime+delay+.2);
+  });
+ }catch(e){
+  console.log("Som indisponível",e);
+ }
+}async function toggleFullscreen(){
  try{
   if(document.fullscreenElement){
    await document.exitFullscreen();
