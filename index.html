@@ -37,6 +37,13 @@ button.danger{background:#fee2e2;color:#991b1b}
 .field-label{display:block;font-size:13px;color:#475569;margin:0 0 5px}
 .field{min-width:0}
 
+/* CADASTRO POR VOZ */
+.voice-area{grid-column:1/-1;padding:13px;background:#f5f8ff;border:1px solid #e1e9fb;border-radius:12px}
+.voice-area button{width:100%;min-height:48px}
+.voice-status{font-size:13px;color:#64748b;line-height:1.5;margin:9px 2px 0}
+.voice-status.success{color:#18734b}
+.voice-status.error{color:#b42332}
+
 /* TELA DE EXECUÇÃO */
 #execution{display:none;position:fixed;inset:0;width:100%;height:100%;height:100dvh;background:#090d16;color:white;z-index:9999;align-items:center;justify-content:center;text-align:center;padding:24px;overflow:auto}
 #execution.active{display:flex}
@@ -111,7 +118,6 @@ button.danger{background:#fee2e2;color:#991b1b}
  .history-summary{grid-template-columns:1fr 1fr}
  .history-stat strong{font-size:20px}
 }
-
 
 /* NOVO VISUAL — Meu Tempo */
 :root{
@@ -197,7 +203,6 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
 @media(min-width:601px){
  .page-nav{padding-bottom:2px}
 }
-
 </style>
 </head>
 <body>
@@ -267,6 +272,11 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
    <div class="field custom-field wide">
     <label class="field-label" for="taskName">Nome da atividade — escolha uma sugestão ou escreva a sua</label>
     <input id="taskName" class="wide" placeholder="Ex.: Organizar a estante" autocomplete="off">
+   </div>
+
+   <div class="voice-area">
+    <button type="button" class="secondary" id="voiceButton" onclick="startVoiceCapture()">🎙️ Cadastrar atividade por voz</button>
+    <p id="voiceStatus" class="voice-status" aria-live="polite">Toque no microfone e diga a atividade e o tempo. Ex.: “Estudar Pedagogia durante 40 minutos”.</p>
    </div>
 
    <div class="field minutes-field">
@@ -612,6 +622,175 @@ function renderTasks(){
 
  $("startButton").disabled=!tasks.length||running;
 }
+
+/* CADASTRO POR VOZ — RECONHECIMENTO NO NAVEGADOR */
+
+function setVoiceStatus(message,type=""){
+ const status=$("voiceStatus");
+ status.textContent=message;
+ status.className="voice-status"+(type?" "+type:"");
+}
+
+function detectVoiceCategory(text){
+ const value=text.toLowerCase();
+
+ if(/bíblia|jeová|reunião|publicação|oração|texto bíblico|sentinela/.test(value)){
+  return "Espiritualidade";
+ }
+ if(/pedagogia|estudar|estudo|aula|atividade da faculdade|revisar conteúdo|trabalho da faculdade/.test(value)){
+  return "Estudos";
+ }
+ if(/theo|mille|família|brincar|bebê|criança/.test(value)){
+  return "Família";
+ }
+ if(/loja|cliente|venda|produto|relatório|joia|estoque/.test(value)){
+  return "Trabalho";
+ }
+ if(/caminhar|caminhada|correr|corrida|treino|exercício|alongamento/.test(value)){
+  return "Exercícios";
+ }
+ if(/planta|quintal|passeio|área externa|folhas/.test(value)){
+  return "Área externa";
+ }
+ if(/varrer|passar pano|louça|poeira|cama|casa|limpar|lavar|organizar cômodo/.test(value)){
+  return "Casa";
+ }
+
+ return $("taskCategory").value||"Outros";
+}
+
+function parseVoiceDuration(text){
+ let match;
+
+ match=text.match(/\b(\d+)\s*(minutos?|mins?|min)\b/i);
+ if(match)return Number(match[1]);
+
+ match=text.match(/\b(\d+)\s*(horas?|hrs?|h)\b/i);
+ if(match)return Number(match[1])*60;
+
+ const normalized=text.toLowerCase();
+
+ if(/\bmeia hora\b/.test(normalized))return 30;
+ if(/\buma hora\b/.test(normalized))return 60;
+ if(/\bduas horas\b/.test(normalized))return 120;
+ if(/\btrês horas\b|\btres horas\b/.test(normalized))return 180;
+ if(/\bquatro horas\b/.test(normalized))return 240;
+
+ return null;
+}
+
+function cleanVoiceTaskName(text){
+ let name=text.trim();
+
+ name=name.replace(/\b(?:durante|por|em)\s+\d+\s*(?:minutos?|mins?|min|horas?|hrs?|h)\b/gi," ");
+ name=name.replace(/\b\d+\s*(?:minutos?|mins?|min|horas?|hrs?|h)\b/gi," ");
+ name=name.replace(/\b(?:durante|por|em)\s+(?:meia|uma|duas|dois|três|tres|quatro)\s+horas?\b/gi," ");
+ name=name.replace(/\b(?:durante|por)\s+meia hora\b/gi," ");
+
+ name=name.replace(/^(?:(?:eu\s+)?(?:quero|preciso|vou|gostaria de|desejo)\s+)+/i,"");
+ name=name.replace(/^(?:adicionar|cadastrar|registrar|colocar)\s+(?:a\s+)?(?:tarefa|atividade)?\s*/i,"");
+ name=name.replace(/^(?:a\s+)?(?:tarefa|atividade)\s+(?:de\s+)?/i,"");
+
+ name=name.replace(/\s+/g," ").replace(/^[\s,.-]+|[\s,.-]+$/g,"");
+
+ if(name.length){
+  name=name.charAt(0).toUpperCase()+name.slice(1);
+ }
+
+ return name;
+}
+
+function startVoiceCapture(){
+ const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+
+ if(!SpeechRecognition){
+  setVoiceStatus("Este navegador não oferece reconhecimento de voz. Experimente abrir o Meu Tempo no Google Chrome do Android.", "error");
+  return;
+ }
+
+ const button=$("voiceButton");
+ button.disabled=true;
+ setVoiceStatus("Ouvindo... fale o nome da atividade e, se possível, a duração.");
+
+ const recognition=new SpeechRecognition();
+ recognition.lang="pt-BR";
+ recognition.interimResults=false;
+ recognition.maxAlternatives=1;
+
+ recognition.onresult=event=>{
+  const transcript=event.results[0][0].transcript||"";
+  const minutes=parseVoiceDuration(transcript);
+  const name=cleanVoiceTaskName(transcript);
+
+  if(!name){
+   setVoiceStatus("Não consegui identificar o nome da atividade. Tente falar novamente.", "error");
+   return;
+  }
+
+  $("taskCategory").value=detectVoiceCategory(name);
+  updateActivitySuggestions();
+  $("activitySuggestion").value="";
+  $("taskName").value=name;
+
+  if(minutes===null){
+   $("taskMinutes").focus();
+   const answer=prompt("Entendi a atividade: "+name+"\n\nPor quantos minutos você deseja realizá-la?");
+
+   if(answer===null||answer.trim()===""){
+    setVoiceStatus("Atividade reconhecida. Informe a duração em minutos e toque em “Adicionar atividade”.");
+    return;
+   }
+
+   const chosenMinutes=Number(answer);
+
+   if(!Number.isInteger(chosenMinutes)||chosenMinutes<1||chosenMinutes>600){
+    setVoiceStatus("A duração precisa ser um número entre 1 e 600 minutos. A atividade ficou preenchida para você ajustar.", "error");
+    $("taskMinutes").focus();
+    return;
+   }
+
+   $("taskMinutes").value=chosenMinutes;
+   addTask();
+   setVoiceStatus("Atividade cadastrada: "+name+" — "+chosenMinutes+" minutos. O cronômetro ainda não começou.", "success");
+   return;
+  }
+
+  if(!Number.isInteger(minutes)||minutes<1||minutes>600){
+   setVoiceStatus("A duração identificada precisa estar entre 1 e 600 minutos. Confira o tempo antes de adicionar.", "error");
+   $("taskMinutes").focus();
+   return;
+  }
+
+  $("taskMinutes").value=minutes;
+  addTask();
+  setVoiceStatus("Atividade cadastrada: "+name+" — "+minutes+" minutos. O cronômetro ainda não começou.", "success");
+ };
+
+ recognition.onerror=event=>{
+  if(event.error==="not-allowed"||event.error==="service-not-allowed"){
+   setVoiceStatus("O acesso ao microfone não foi autorizado. Verifique a permissão do navegador.", "error");
+  }else if(event.error==="no-speech"){
+   setVoiceStatus("Não ouvi sua fala. Toque no microfone e tente novamente.", "error");
+  }else if(event.error==="network"){
+   setVoiceStatus("O reconhecimento de voz precisa de conexão com a internet neste navegador. Tente novamente quando estiver conectado.", "error");
+  }else{
+   setVoiceStatus("Não foi possível reconhecer a fala. Tente novamente.", "error");
+  }
+ };
+
+ recognition.onend=()=>{
+  button.disabled=false;
+ };
+
+ try{
+  recognition.start();
+ }catch(error){
+  button.disabled=false;
+  setVoiceStatus("Não foi possível iniciar o microfone. Tente novamente.", "error");
+ }
+}
+
+/* FIM DO CADASTRO POR VOZ */
 
 function addTask(){
  const typedName=$("taskName").value.trim();
