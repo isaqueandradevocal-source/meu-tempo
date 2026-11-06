@@ -1,5 +1,5 @@
 
-const CACHE_NAME = "meu-tempo-v4";
+const CACHE_NAME = "meu-tempo-v5";
 
 const FILES_TO_CACHE = [
   "./",
