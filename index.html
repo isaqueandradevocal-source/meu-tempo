@@ -1,22 +1,270 @@
- <div class="exec-content">
-  <div id="execTag" class="exec-tag">TAREFA</div>
-  <h2 id="execName">Sua tarefa</h2>
-  <div id="breakMessage"></div>
-  <div id="clock">00:00</div>
-  <p id="progress">Tarefa 1 de 1</p>
-  <div class="progress-track">
-   <div id="progressFill" class="progress-fill"></div>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu Tempo</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#172033">
+<meta name="description" content="Meu Tempo — Planejador de execução.">
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#f3f5f8;color:#202632}
+header{padding:22px;background:#172033;color:white}
+header h1{margin:0;font-size:26px}
+header p{margin:6px 0 0;color:#cbd5e1;line-height:1.4}
+main{max-width:850px;margin:auto;padding:20px}
+.panel{background:white;border-radius:14px;padding:18px;margin-bottom:18px;box-shadow:0 3px 12px #0000000c}
+h2{font-size:19px;margin:0 0 15px}
+input,select{padding:12px;border:1px solid #ccd2dc;border-radius:8px;font-size:16px;min-width:0;background:white;color:#202632}
+.add-grid{display:grid;grid-template-columns:1fr 1fr 110px;gap:9px}
+.add-grid .wide{grid-column:1/-1}
+.add-grid button{grid-column:1/-1}
+button{border:0;border-radius:8px;padding:11px 15px;background:#2563eb;color:white;font-size:14px;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.secondary{background:#e8edf5;color:#263246}
+button.danger{background:#fee2e2;color:#991b1b}
+.task{display:flex;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid #edf0f4}
+.task:last-child{border:0}
+.taskname{flex:1;min-width:0;overflow-wrap:anywhere}
+.task small{color:#687386;white-space:nowrap}
+.task button{padding:8px 10px}
+.settings{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.settings label{font-size:14px;color:#475569}
+.settings input{width:70px;padding:8px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.note{font-size:13px;color:#64748b;line-height:1.5}
+.field-label{display:block;font-size:13px;color:#475569;margin:0 0 5px}
+.field{min-width:0}
+
+/* TELA DE EXECUÇÃO */
+#execution{display:none;position:fixed;inset:0;width:100%;height:100%;height:100dvh;background:#090d16;color:white;z-index:9999;align-items:center;justify-content:center;text-align:center;padding:24px;overflow:auto}
+#execution.active{display:flex}
+.exec-content{width:100%;max-width:700px}
+.exec-tag{color:#93a4bd;text-transform:uppercase;letter-spacing:2px;font-size:13px}
+#execName{font-size:clamp(28px,6vw,48px);margin:25px 0}
+#breakMessage{display:none;max-width:580px;margin:-8px auto 24px;padding:14px 18px;border:1px solid #34445e;border-radius:12px;background:#121c2d;color:#dbeafe;font-size:clamp(16px,3vw,20px);line-height:1.5}
+#clock{font-size:clamp(76px,17vw,150px);font-weight:bold;letter-spacing:-5px;font-variant-numeric:tabular-nums;line-height:1.1}
+#progress{color:#9caec8;margin:12px 0 18px}
+.progress-track{width:100%;height:16px;background:#26334a;border-radius:30px;overflow:hidden;margin:0 auto 28px;box-shadow:inset 0 2px 5px #0005}
+.progress-fill{width:0%;height:100%;background:linear-gradient(90deg,#2563eb,#38bdf8);border-radius:30px;transition:width .25s linear}
+#progressPercent{color:#93a4bd;font-size:13px;margin-top:-20px;margin-bottom:25px}
+#nextTask{color:#8290a5;font-size:13px;text-align:right;margin-top:-15px;margin-bottom:25px}
+#nextTask strong{color:#b8c5d8;font-weight:normal}
+.exec-buttons{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.exec-buttons button{padding:14px 20px;font-size:15px}
+#status{color:#a9b8ce;margin:18px 0;min-height:20px}
+#recordStatus{font-size:12px;color:#e5bd69;margin-top:12px}
+#exitFullscreen{position:absolute;top:14px;right:14px;background:#26334a;color:white;padding:10px 13px}
+#execution:fullscreen{background:#090d16}
+
+@media(max-width:520px){
+ main{padding:12px}
+ .panel{padding:14px}
+ .task{flex-wrap:wrap}
+ .taskname{min-width:45%}
+ .add-grid{grid-template-columns:1fr 95px}
+ .add-grid .category-field,.add-grid .activity-field,.add-grid .custom-field,.add-grid .minutes-field,.add-grid button{grid-column:1/-1}
+ #execution{padding:18px 14px}
+ .exec-content{display:flex;flex-direction:column;align-items:center;justify-content:center}
+ #execTag{order:1}
+ #clock{order:2;font-size:clamp(100px,29vw,180px);letter-spacing:-5px;line-height:1;margin:12px 0}
+ #execName{order:3;font-size:clamp(25px,7vw,34px);line-height:1.2;margin:10px 0 22px}
+ #breakMessage{order:4;margin:0 auto 18px}
+ #progress{order:5;margin:8px 0 15px}
+ .progress-track{order:6;height:13px}
+ #progressPercent{order:7;margin-top:8px;margin-bottom:20px}
+ #nextTask{order:8;width:100%}
+ #status{order:9}
+ .exec-buttons{order:10;gap:8px}
+ .exec-buttons button{padding:13px 14px}
+ #recordStatus{order:11}
+}
+
+/* TELA INICIAL */
+.home-intro{padding:24px;background:#172033;color:#fff;border-radius:14px;margin-bottom:18px}
+.home-intro h2{font-size:24px;margin:0 0 8px}
+.home-intro p{margin:0;color:#cbd5e1;line-height:1.5}
+.home-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px}
+.home-stat{background:#f1f5f9;border-radius:12px;padding:16px;min-width:0}
+.home-stat small{display:block;color:#64748b;margin-bottom:8px;line-height:1.35}
+.home-stat strong{display:block;font-size:25px;color:#172033;overflow-wrap:anywhere}
+.home-actions{display:flex;gap:9px;flex-wrap:wrap}
+@media(max-width:520px){.home-stats{grid-template-columns:1fr 1fr}.home-stat:last-child{grid-column:1/-1}}
+
+/* HISTÓRICO */
+.page-nav{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.page-nav button{background:#334155;color:#fff}
+.page-nav button.active{background:#2563eb}
+.hidden-page{display:none}
+.history-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.history-stat{background:#f1f5f9;border-radius:10px;padding:14px}
+.history-stat small{display:block;color:#64748b;margin-bottom:5px}
+.history-stat strong{font-size:23px;color:#172033}
+.history-date{font-size:15px;margin:22px 0 10px;text-transform:capitalize;color:#334155}
+.history-entry{border:1px solid #e2e8f0;border-radius:10px;padding:13px;margin-bottom:9px}
+.history-entry-title{font-weight:bold;overflow-wrap:anywhere}
+.history-meta{font-size:12px;color:#64748b;margin-top:5px}
+.history-times{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:#475569;margin-top:9px}
+.history-empty{padding:18px;background:#f8fafc;border-radius:10px;color:#64748b;line-height:1.5}
+@media(max-width:520px){
+ .history-summary{grid-template-columns:1fr 1fr}
+ .history-stat strong{font-size:20px}
+}
+</style>
+</head>
+<body>
+
+<header>
+ <h1>Meu Tempo</h1>
+ <p>Planejador de execução — Organize seu dia. Concentre-se em uma tarefa por vez.</p>
+ <nav class="page-nav" aria-label="Navegação principal">
+  <button type="button" id="homeTab" class="active" onclick="showPage('home')">Início</button>
+  <button type="button" id="plannerTab" onclick="showPage('planner')">Programação</button>
+  <button type="button" id="historyTab" onclick="showPage('history')">Histórico</button>
+ </nav>
+</header>
+
+<section id="homePage">
+ <main>
+  <section class="home-intro">
+   <h2>Seu tempo, suas escolhas.</h2>
+   <p>Veja como está sua programação e escolha por onde começar. Uma tarefa de cada vez.</p>
+  </section>
+  <section class="panel">
+   <h2>Resumo de hoje</h2>
+   <div class="home-stats">
+    <div class="home-stat"><small>Tarefas na programação</small><strong id="homePlanned">0</strong></div>
+    <div class="home-stat"><small>Tarefas concluídas hoje</small><strong id="homeCompleted">0</strong></div>
+    <div class="home-stat"><small>Tempo de execução hoje</small><strong id="homeTime">0 min</strong></div>
+   </div>
+   <div class="home-actions">
+    <button type="button" onclick="showPage('planner')">Organizar programação</button>
+    <button type="button" class="secondary" onclick="beginFromHome()">▶ Começar agora</button>
+   </div>
+  </section>
+  <section class="panel">
+   <h2>Um passo de cada vez</h2>
+   <p class="note">O Meu Tempo ajuda você a acompanhar sua execução, mas quem decide o que merece sua atenção é você.</p>
+  </section>
+ </main>
+</section>
+
+<div id="plannerPage" class="hidden-page">
+<main>
+ <section class="panel">
+  <h2>Minha programação</h2>
+  <div class="add-grid">
+   <div class="field category-field">
+    <label class="field-label" for="taskCategory">Categoria</label>
+    <select id="taskCategory">
+     <option value="Casa">Casa</option>
+     <option value="Área externa">Área externa</option>
+     <option value="Cuidados pessoais">Cuidados pessoais</option>
+     <option value="Família">Família</option>
+     <option value="Trabalho">Trabalho</option>
+     <option value="Estudos">Estudos</option>
+     <option value="Espiritualidade">Espiritualidade</option>
+     <option value="Exercícios">Exercícios</option>
+     <option value="Outros">Outros</option>
+    </select>
+   </div>
+
+   <div class="field activity-field">
+    <label class="field-label" for="activitySuggestion">Sugestões de atividades</label>
+    <select id="activitySuggestion">
+     <option value="">Escolha uma sugestão (opcional)</option>
+    </select>
+   </div>
+
+   <div class="field custom-field wide">
+    <label class="field-label" for="taskName">Nome da atividade — escolha uma sugestão ou escreva a sua</label>
+    <input id="taskName" class="wide" placeholder="Ex.: Organizar a estante" autocomplete="off">
+   </div>
+
+   <div class="field minutes-field">
+    <label class="field-label" for="taskMinutes">Duração (minutos)</label>
+    <input id="taskMinutes" type="number" min="1" max="600" value="10" aria-label="Minutos" style="width:100%">
+   </div>
+
+   <div class="field wide">
+    <label class="field-label" for="taskHistory">Registrar no histórico?</label>
+    <select id="taskHistory">
+     <option value="nao" selected>Não</option>
+     <option value="sim">Sim</option>
+    </select>
+   </div>
+
+   <button onclick="addTask()">Adicionar atividade</button>
   </div>
-  <p id="progressPercent">0% concluído</p>
-  <p id="nextTask">A seguir: --</p>
+
+  <p class="note">As sugestões são apenas um apoio. Você decide o que fazer e pode escrever qualquer atividade.</p>
+  <div id="taskList"></div>
+  <p id="emptyMessage" class="note">Nenhuma tarefa adicionada ainda.</p>
+ </section>
+
+ <section class="panel">
+  <h2>Configurar pausas</h2>
+  <div class="settings">
+   <label>Pausa curta (min)<br><input id="shortBreak" type="number" min="0" value="2"></label>
+   <label>Pausa longa (min)<br><input id="longBreak" type="number" min="0" value="5"></label>
+   <label>Limite (min)<br><input id="breakLimit" type="number" min="1" value="15"></label>
+  </div>
+  <p class="note">Tarefas abaixo do limite usam a pausa curta. As demais usam a pausa longa. Não há pausa após a última tarefa.</p>
+ </section>
+
+ <section class="panel">
+  <h2>Começar</h2>
+  <div class="actions">
+   <button onclick="startProgram()" id="startButton">▶ Iniciar programação</button>
+   <button class="secondary" onclick="clearTasks()">Limpar tarefas</button>
+  </div>
+ </section>
+</main>
+</div>
+
+<section id="historyPage" class="hidden-page">
+ <main>
+  <section class="panel">
+   <h2>Histórico de tarefas concluídas</h2>
+   <p class="note">Aqui aparecem somente as tarefas que você escolheu registrar e concluiu até o fim.</p>
+
+   <div class="history-summary">
+    <div class="history-stat">
+     <small>Tarefas concluídas</small>
+     <strong id="historyCount">0</strong>
+    </div>
+    <div class="history-stat">
+     <small>Tempo realizado</small>
+     <strong id="historyTotalTime">0 min</strong>
+    </div>
+   </div>
+
+   <div id="historyList"></div>
+   <p id="historyEmpty" class="history-empty">Ainda não há tarefas registradas. Ao adicionar uma atividade, escolha “Sim” em “Registrar no histórico?” para acompanhá-la aqui.</p>
+  </section>
+ </main>
+</section>
+
+<div id="execution">
+ <button id="exitFullscreen" onclick="toggleFullscreen()">Sair da tela cheia</button>
+ <div class="exec-content">
+  <div class="exec-tag" id="execTag">TAREFA 1</div>
+  <h2 id="execName">Preparado?</h2>
+  <div id="breakMessage" aria-live="polite"></div>
+  <div id="clock">00:00</div>
+  <div id="progress">Vamos começar</div>
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  <div id="progressPercent">0% concluído</div>
+  <div id="nextTask">A seguir: --</div>
+  <div id="status"></div>
   <div class="exec-buttons">
    <button onclick="togglePause()" id="pauseButton">Pausar</button>
-   <button onclick="skipStep()" class="secondary">Pular etapa</button>
-   <button onclick="finishProgram()" class="danger">Encerrar</button>
-   <button onclick="toggleRecording()" id="recordButton" class="secondary">Gravar vídeo</button>
+   <button class="secondary" onclick="skipStep()">Pular etapa</button>
+   <button class="secondary" onclick="toggleRecording()" id="recordButton">Gravar vídeo</button>
+   <button class="danger" onclick="finishProgram()">Encerrar</button>
   </div>
-  <p id="status">Concentre-se nesta tarefa.</p>
-  <p id="recordStatus"></p>
+  <div id="recordStatus"></div>
  </div>
 </div>
 
@@ -25,20 +273,9 @@ let tasks=JSON.parse(localStorage.getItem("meuTempoTasks")||"[]");
 let historyEntries=JSON.parse(localStorage.getItem("meuTempoHistory")||"[]");
 let dailyStats=JSON.parse(localStorage.getItem("meuTempoDailyStats")||"{}");
 
-let currentIndex=0;
-let remaining=0;
-let totalDuration=0;
-let timer=null;
-let running=false;
-let paused=false;
-let inBreak=false;
-let deadline=0;
-let taskActiveStartedAt=0;
-let taskElapsedMs=0;
-let mediaRecorder=null;
-let recordedChunks=[];
-let recordingStream=null;
-let lastBreakMessage="";
+let currentIndex=0,remaining=0,totalDuration=0,timer=null,paused=false,inBreak=false,running=false,audioContext=null,deadline=0;
+let taskActiveStartedAt=0,taskElapsedMs=0;
+let mediaRecorder=null,recordedChunks=[],recordingStream=null,lastBreakMessage="";
 
 const $=id=>document.getElementById(id);
 
@@ -101,70 +338,155 @@ function saveHistory(){
  localStorage.setItem("meuTempoHistory",JSON.stringify(historyEntries));
 }
 
-function saveDailyStats(){
- localStorage.setItem("meuTempoDailyStats",JSON.stringify(dailyStats));
-}
-
-function todayKey(){
- const now=new Date();
- const year=now.getFullYear();
- const month=String(now.getMonth()+1).padStart(2,"0");
- const day=String(now.getDate()).padStart(2,"0");
- return `${year}-${month}-${day}`;
-}
-
-function getTodayStats(){
- const key=todayKey();
-
- if(!dailyStats[key]){
-  dailyStats[key]={completed:0,minutes:0};
- }
-
- return dailyStats[key];
-}
-
-function renderHome(){
- $("homePlanned").textContent=tasks.length;
-
- const stats=getTodayStats();
-
- $("homeCompleted").textContent=stats.completed||0;
- $("homeTime").textContent=(stats.minutes||0)+" min";
-}
-
 function showPage(page){
  $("homePage").style.display=page==="home"?"block":"none";
  $("plannerPage").style.display=page==="planner"?"block":"none";
  $("historyPage").style.display=page==="history"?"block":"none";
-
  $("homeTab").classList.toggle("active",page==="home");
  $("plannerTab").classList.toggle("active",page==="planner");
  $("historyTab").classList.toggle("active",page==="history");
 
- if(page==="home")renderHome();
  if(page==="history")renderHistory();
+ if(page==="home")renderHome();
+}
+
+function todayKey(){
+ const now=new Date();
+ return now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
+}
+
+function renderHome(){
+ const today=dailyStats[todayKey()]||{completed:0,seconds:0};
+ $("homePlanned").textContent=tasks.length;
+ $("homeCompleted").textContent=Number(today.completed)||0;
+ $("homeTime").textContent=formatDuration(Number(today.seconds)||0);
 }
 
 function beginFromHome(){
- if(!tasks.length){
-  showPage("planner");
-  alert("Adicione pelo menos uma tarefa antes de começar.");
-  return;
- }
-
  showPage("planner");
  startProgram();
 }
 
-function renderTasks(){
- const list=$("taskList");
+function formatDuration(seconds){
+ const totalMinutes=Math.floor(Math.max(0,seconds)/60);
+ const hours=Math.floor(totalMinutes/60);
+ const minutes=totalMinutes%60;
+
+ if(hours>0)return hours+"h "+String(minutes).padStart(2,"0")+"min";
+ return totalMinutes+" min";
+}
+
+function localDateKey(date){
+ return date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+String(date.getDate()).padStart(2,"0");
+}
+
+function renderHistory(){
+ const list=$("historyList");
  list.innerHTML="";
 
+ const sorted=[...historyEntries].sort((a,b)=>new Date(b.completedAt)-new Date(a.completedAt));
+
+ $("historyCount").textContent=sorted.length;
+
+ const totalSeconds=sorted.reduce((sum,item)=>sum+(Number(item.actualSeconds)||0),0);
+ $("historyTotalTime").textContent=formatDuration(totalSeconds);
+
+ $("historyEmpty").style.display=sorted.length?"none":"block";
+
+ const groups={};
+
+ sorted.forEach(entry=>{
+  const date=new Date(entry.completedAt);
+  const key=localDateKey(date);
+
+  if(!groups[key])groups[key]=[];
+  groups[key].push(entry);
+ });
+
+ Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(key=>{
+  const date=new Date(key+"T12:00:00");
+
+  const heading=document.createElement("h3");
+  heading.className="history-date";
+  heading.textContent=date.toLocaleDateString("pt-BR",{
+   weekday:"long",
+   day:"2-digit",
+   month:"long",
+   year:"numeric"
+  });
+  list.appendChild(heading);
+
+  groups[key].forEach(entry=>{
+   const card=document.createElement("article");
+   card.className="history-entry";
+
+   const title=document.createElement("div");
+   title.className="history-entry-title";
+   title.textContent=entry.name||"Atividade";
+
+   const meta=document.createElement("div");
+   meta.className="history-meta";
+
+   const completedDate=new Date(entry.completedAt);
+   const time=completedDate.toLocaleTimeString("pt-BR",{
+    hour:"2-digit",
+    minute:"2-digit"
+   });
+
+   meta.textContent=(entry.category?entry.category+" · ":"")+"Concluída às "+time;
+
+   const times=document.createElement("div");
+   times.className="history-times";
+
+   const planned=document.createElement("span");
+   planned.textContent="Planejado: "+formatDuration(Number(entry.plannedSeconds)||0);
+
+   const actual=document.createElement("span");
+   actual.textContent="Realizado: "+formatDuration(Number(entry.actualSeconds)||0);
+
+   times.append(planned,actual);
+   card.append(title,meta,times);
+   list.appendChild(card);
+  });
+ });
+}
+
+function recordCompletedTask(){
+ const task=tasks[currentIndex];
+ if(!task)return;
+
+ const activeMs=taskElapsedMs+(taskActiveStartedAt?Date.now()-taskActiveStartedAt:0);
+ const actualSeconds=Math.max(0,Math.round(activeMs/1000));
+ const key=todayKey();
+ if(!dailyStats[key])dailyStats[key]={completed:0,seconds:0};
+ dailyStats[key].completed++;
+ dailyStats[key].seconds+=actualSeconds;
+ localStorage.setItem("meuTempoDailyStats",JSON.stringify(dailyStats));
+
+ if(task.recordHistory===true){
+  historyEntries.push({
+   id:String(Date.now())+"-"+String(Math.random()).slice(2,8),
+   name:task.name,
+   category:task.category||"",
+   plannedSeconds:Number(task.minutes)*60,
+   actualSeconds,
+   completedAt:new Date().toISOString()
+  });
+  saveHistory();
+ }
+
+ taskActiveStartedAt=0;
+ taskElapsedMs=0;
+ renderHome();
+}
+
+function renderTasks(){
+ $("taskList").innerHTML="";
  $("emptyMessage").style.display=tasks.length?"none":"block";
 
  tasks.forEach((task,index)=>{
-  const row=document.createElement("div");
-  row.className="task";
+  const item=document.createElement("div");
+  item.className="task";
 
   const name=document.createElement("div");
   name.className="taskname";
@@ -192,49 +514,50 @@ function renderTasks(){
   edit.textContent="Editar";
   edit.onclick=()=>editTask(index);
 
-  const remove=document.createElement("button");
-  remove.className="danger";
-  remove.textContent="Excluir";
-  remove.onclick=()=>deleteTask(index);
+  const del=document.createElement("button");
+  del.className="danger";
+  del.textContent="Excluir";
+  del.onclick=()=>deleteTask(index);
 
-  row.append(name,duration,up,down,edit,remove);
-  list.appendChild(row);
+  item.append(name,duration,up,down,edit,del);
+  $("taskList").appendChild(item);
  });
 
- $("startButton").disabled=!tasks.length;
- renderHome();
+ $("startButton").disabled=!tasks.length||running;
 }
 
 function addTask(){
- const name=$("taskName").value.trim();
+ const typedName=$("taskName").value.trim();
+ const suggested=$("activitySuggestion").value;
+ const name=typedName||suggested;
+ const category=$("taskCategory").value;
  const minutes=Number($("taskMinutes").value);
- const recordHistory=$("taskHistory").value==="sim";
 
  if(!name){
-  alert("Digite o nome da atividade.");
+  alert("Escolha uma sugestão ou escreva o nome da atividade.");
   $("taskName").focus();
   return;
  }
 
  if(!Number.isInteger(minutes)||minutes<1||minutes>600){
   alert("Informe uma duração entre 1 e 600 minutos.");
-  $("taskMinutes").focus();
   return;
  }
 
  tasks.push({
   name,
   minutes,
-  recordHistory
+  category,
+  recordHistory:$("taskHistory").value==="sim"
  });
+
+ $("taskName").value="";
+ $("activitySuggestion").value="";
+ $("taskHistory").value="nao";
 
  saveTasks();
  renderTasks();
-
- $("taskName").value="";
- $("taskMinutes").value=10;
- $("taskHistory").value="nao";
- $("activitySuggestion").value="";
+ renderHome();
  $("taskName").focus();
 }
 
@@ -316,96 +639,6 @@ function getBreakMessage(){
  lastBreakMessage=message;
 
  return message;
-}
-
-function recordCompletedTask(){
- const task=tasks[currentIndex];
- if(!task)return;
-
- const elapsed=Math.max(0,Math.round((taskElapsedMs+(taskActiveStartedAt?Date.now()-taskActiveStartedAt:0))/60000));
-
- const stats=getTodayStats();
- stats.completed++;
- stats.minutes+=elapsed;
- saveDailyStats();
-
- if(task.recordHistory===true){
-  historyEntries.push({
-   name:task.name,
-   minutes:task.minutes,
-   elapsed,
-   date:new Date().toISOString(),
-   dateKey:todayKey()
-  });
-
-  saveHistory();
- }
-
- taskActiveStartedAt=0;
- taskElapsedMs=0;
-
- renderHome();
- renderHistory();
-}
-
-function renderHistory(){
- const list=$("historyList");
- list.innerHTML="";
-
- const total=historyEntries.reduce((sum,item)=>sum+(Number(item.elapsed)||Number(item.minutes)||0),0);
-
- $("historyCount").textContent=historyEntries.length;
- $("historyTotalTime").textContent=total+" min";
-
- $("historyEmpty").style.display=historyEntries.length?"none":"block";
-
- const grouped={};
-
- historyEntries.slice().reverse().forEach(item=>{
-  const date=new Date(item.date);
-  const key=item.dateKey||date.toLocaleDateString("sv-SE");
-
-  if(!grouped[key])grouped[key]=[];
-  grouped[key].push(item);
- });
-
- Object.keys(grouped).forEach(key=>{
-  const dateTitle=document.createElement("h3");
-  dateTitle.className="history-date";
-
-  const parts=key.split("-");
-  dateTitle.textContent=parts.length===3
-   ?new Date(Number(parts[0]),Number(parts[1])-1,Number(parts[2])).toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"})
-   :key;
-
-  list.appendChild(dateTitle);
-
-  grouped[key].forEach(item=>{
-   const entry=document.createElement("div");
-   entry.className="history-entry";
-
-   const title=document.createElement("div");
-   title.className="history-entry-title";
-   title.textContent=item.name;
-
-   const meta=document.createElement("div");
-   meta.className="history-meta";
-   meta.textContent=new Date(item.date).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
-
-   const times=document.createElement("div");
-   times.className="history-times";
-
-   const planned=document.createElement("span");
-   planned.textContent="Tempo previsto: "+item.minutes+" min";
-
-   const actual=document.createElement("span");
-   actual.textContent="Tempo realizado: "+(item.elapsed??item.minutes)+" min";
-
-   times.append(planned,actual);
-   entry.append(title,meta,times);
-   list.appendChild(entry);
-  });
- });
 }
 
 async function startProgram(){
@@ -780,4 +1013,3 @@ showPage("home");
 </script>
 </body>
 </html>
-
