@@ -36,6 +36,7 @@ button.danger{background:#fee2e2;color:#991b1b}
 .note{font-size:13px;color:#64748b;line-height:1.5}
 .field-label{display:block;font-size:13px;color:#475569;margin:0 0 5px}
 .field{min-width:0}
+
 /* TELA DE EXECUÇÃO */
 #execution{display:none;position:fixed;inset:0;width:100%;height:100%;height:100dvh;background:#090d16;color:white;z-index:9999;align-items:center;justify-content:center;text-align:center;padding:24px;overflow:auto}
 #execution.active{display:flex}
@@ -56,9 +57,14 @@ button.danger{background:#fee2e2;color:#991b1b}
 #recordStatus{font-size:12px;color:#e5bd69;margin-top:12px}
 #exitFullscreen{position:absolute;top:14px;right:14px;background:#26334a;color:white;padding:10px 13px}
 #execution:fullscreen{background:#090d16}
+
 @media(max-width:520px){
- main{padding:12px}.panel{padding:14px}.task{flex-wrap:wrap}.taskname{min-width:45%}
- .add-grid{grid-template-columns:1fr 95px}.add-grid .category-field{grid-column:1/-1}.add-grid .activity-field{grid-column:1/-1}.add-grid .custom-field{grid-column:1/-1}.add-grid .minutes-field{grid-column:1/-1}.add-grid button{grid-column:1/-1}
+ main{padding:12px}
+ .panel{padding:14px}
+ .task{flex-wrap:wrap}
+ .taskname{min-width:45%}
+ .add-grid{grid-template-columns:1fr 95px}
+ .add-grid .category-field,.add-grid .activity-field,.add-grid .custom-field,.add-grid .minutes-field,.add-grid button{grid-column:1/-1}
  #execution{padding:18px 14px}
  .exec-content{display:flex;flex-direction:column;align-items:center;justify-content:center}
  #execTag{order:1}
@@ -74,13 +80,40 @@ button.danger{background:#fee2e2;color:#991b1b}
  .exec-buttons button{padding:13px 14px}
  #recordStatus{order:11}
 }
+
+/* HISTÓRICO */
+.page-nav{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.page-nav button{background:#334155;color:#fff}
+.page-nav button.active{background:#2563eb}
+.hidden-page{display:none}
+.history-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.history-stat{background:#f1f5f9;border-radius:10px;padding:14px}
+.history-stat small{display:block;color:#64748b;margin-bottom:5px}
+.history-stat strong{font-size:23px;color:#172033}
+.history-date{font-size:15px;margin:22px 0 10px;text-transform:capitalize;color:#334155}
+.history-entry{border:1px solid #e2e8f0;border-radius:10px;padding:13px;margin-bottom:9px}
+.history-entry-title{font-weight:bold;overflow-wrap:anywhere}
+.history-meta{font-size:12px;color:#64748b;margin-top:5px}
+.history-times{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:#475569;margin-top:9px}
+.history-empty{padding:18px;background:#f8fafc;border-radius:10px;color:#64748b;line-height:1.5}
+@media(max-width:520px){
+ .history-summary{grid-template-columns:1fr 1fr}
+ .history-stat strong{font-size:20px}
+}
 </style>
 </head>
 <body>
+
 <header>
  <h1>Meu Tempo</h1>
  <p>Planejador de execução — Organize seu dia. Concentre-se em uma tarefa por vez.</p>
+ <nav class="page-nav" aria-label="Navegação principal">
+  <button type="button" id="plannerTab" class="active" onclick="showPage('planner')">Programação</button>
+  <button type="button" id="historyTab" onclick="showPage('history')">Histórico</button>
+ </nav>
 </header>
+
+<div id="plannerPage">
 <main>
  <section class="panel">
   <h2>Minha programação</h2>
@@ -88,27 +121,51 @@ button.danger{background:#fee2e2;color:#991b1b}
    <div class="field category-field">
     <label class="field-label" for="taskCategory">Categoria</label>
     <select id="taskCategory">
-     <option value="Casa">Casa</option><option value="Área externa">Área externa</option><option value="Cuidados pessoais">Cuidados pessoais</option><option value="Família">Família</option><option value="Trabalho">Trabalho</option><option value="Estudos">Estudos</option><option value="Espiritualidade">Espiritualidade</option><option value="Exercícios">Exercícios</option><option value="Outros">Outros</option>
+     <option value="Casa">Casa</option>
+     <option value="Área externa">Área externa</option>
+     <option value="Cuidados pessoais">Cuidados pessoais</option>
+     <option value="Família">Família</option>
+     <option value="Trabalho">Trabalho</option>
+     <option value="Estudos">Estudos</option>
+     <option value="Espiritualidade">Espiritualidade</option>
+     <option value="Exercícios">Exercícios</option>
+     <option value="Outros">Outros</option>
     </select>
    </div>
+
    <div class="field activity-field">
     <label class="field-label" for="activitySuggestion">Sugestões de atividades</label>
-    <select id="activitySuggestion"><option value="">Escolha uma sugestão (opcional)</option></select>
+    <select id="activitySuggestion">
+     <option value="">Escolha uma sugestão (opcional)</option>
+    </select>
    </div>
+
    <div class="field custom-field wide">
     <label class="field-label" for="taskName">Nome da atividade — escolha uma sugestão ou escreva a sua</label>
     <input id="taskName" class="wide" placeholder="Ex.: Organizar a estante" autocomplete="off">
    </div>
+
    <div class="field minutes-field">
     <label class="field-label" for="taskMinutes">Duração (minutos)</label>
     <input id="taskMinutes" type="number" min="1" max="600" value="10" aria-label="Minutos" style="width:100%">
    </div>
+
+   <div class="field wide">
+    <label class="field-label" for="taskHistory">Registrar no histórico?</label>
+    <select id="taskHistory">
+     <option value="nao" selected>Não</option>
+     <option value="sim">Sim</option>
+    </select>
+   </div>
+
    <button onclick="addTask()">Adicionar atividade</button>
   </div>
+
   <p class="note">As sugestões são apenas um apoio. Você decide o que fazer e pode escrever qualquer atividade.</p>
   <div id="taskList"></div>
   <p id="emptyMessage" class="note">Nenhuma tarefa adicionada ainda.</p>
  </section>
+
  <section class="panel">
   <h2>Configurar pausas</h2>
   <div class="settings">
@@ -118,6 +175,7 @@ button.danger{background:#fee2e2;color:#991b1b}
   </div>
   <p class="note">Tarefas abaixo do limite usam a pausa curta. As demais usam a pausa longa. Não há pausa após a última tarefa.</p>
  </section>
+
  <section class="panel">
   <h2>Começar</h2>
   <div class="actions">
@@ -126,6 +184,31 @@ button.danger{background:#fee2e2;color:#991b1b}
   </div>
  </section>
 </main>
+</div>
+
+<section id="historyPage" class="hidden-page">
+ <main>
+  <section class="panel">
+   <h2>Histórico de tarefas concluídas</h2>
+   <p class="note">Aqui aparecem somente as tarefas que você escolheu registrar e concluiu até o fim.</p>
+
+   <div class="history-summary">
+    <div class="history-stat">
+     <small>Tarefas concluídas</small>
+     <strong id="historyCount">0</strong>
+    </div>
+    <div class="history-stat">
+     <small>Tempo realizado</small>
+     <strong id="historyTotalTime">0 min</strong>
+    </div>
+   </div>
+
+   <div id="historyList"></div>
+   <p id="historyEmpty" class="history-empty">Ainda não há tarefas registradas. Ao adicionar uma atividade, escolha “Sim” em “Registrar no histórico?” para acompanhá-la aqui.</p>
+  </section>
+ </main>
+</section>
+
 <div id="execution">
  <button id="exitFullscreen" onclick="toggleFullscreen()">Sair da tela cheia</button>
  <div class="exec-content">
@@ -147,11 +230,17 @@ button.danger{background:#fee2e2;color:#991b1b}
   <div id="recordStatus"></div>
  </div>
 </div>
+
 <script>
 let tasks=JSON.parse(localStorage.getItem("meuTempoTasks")||"[]");
+let historyEntries=JSON.parse(localStorage.getItem("meuTempoHistory")||"[]");
+
 let currentIndex=0,remaining=0,totalDuration=0,timer=null,paused=false,inBreak=false,running=false,audioContext=null,deadline=0;
+let taskActiveStartedAt=0,taskElapsedMs=0;
 let mediaRecorder=null,recordedChunks=[],recordingStream=null,lastBreakMessage="";
+
 const $=id=>document.getElementById(id);
+
 const activityOptions={
  "Casa":["Varrer a casa","Passar pano","Tirar poeira","Lavar a louça","Organizar um cômodo","Arrumar a cama"],
  "Área externa":["Molhar plantas","Varrer o passeio","Limpar quintal","Recolher folhas","Organizar área externa"],
@@ -163,6 +252,7 @@ const activityOptions={
  "Exercícios":["Caminhar","Correr","Treino físico","Fazer alongamento"],
  "Outros":["Outra atividade"]
 };
+
 const breakMessages=[
  "Você concluiu mais uma etapa. Bom trabalho!",
  "Mais uma tarefa vencida. Aproveite sua pausa.",
@@ -183,71 +273,671 @@ const breakMessages=[
  "Aproveite o silêncio para organizar os pensamentos.",
  "Lembre-se do propósito por trás do que está fazendo."
 ];
+
 function updateActivitySuggestions(){
- const category=$("taskCategory").value,select=$("activitySuggestion");
+ const category=$("taskCategory").value;
+ const select=$("activitySuggestion");
  select.innerHTML="";
- const first=document.createElement("option");first.value="";first.textContent="Escolha uma sugestão (opcional)";select.appendChild(first);
- (activityOptions[category]||[]).forEach(activity=>{const option=document.createElement("option");option.value=activity;option.textContent=activity;select.appendChild(option);});
-}
-function saveTasks(){localStorage.setItem("meuTempoTasks",JSON.stringify(tasks));}
-function renderTasks(){
- $("taskList").innerHTML="";$("emptyMessage").style.display=tasks.length?"none":"block";
- tasks.forEach((task,index)=>{
-  const item=document.createElement("div");item.className="task";
-  const name=document.createElement("div");name.className="taskname";name.textContent=task.name;
-  const duration=document.createElement("small");duration.textContent=task.minutes+" min";
-  const up=document.createElement("button");up.className="secondary";up.textContent="↑";up.title="Mover para cima";up.disabled=index===0;up.onclick=()=>moveTask(index,-1);
-  const down=document.createElement("button");down.className="secondary";down.textContent="↓";down.title="Mover para baixo";down.disabled=index===tasks.length-1;down.onclick=()=>moveTask(index,1);
-  const edit=document.createElement("button");edit.className="secondary";edit.textContent="Editar";edit.onclick=()=>editTask(index);
-  const del=document.createElement("button");del.className="danger";del.textContent="Excluir";del.onclick=()=>deleteTask(index);
-  item.append(name,duration,up,down,edit,del);$("taskList").appendChild(item);
+
+ const first=document.createElement("option");
+ first.value="";
+ first.textContent="Escolha uma sugestão (opcional)";
+ select.appendChild(first);
+
+ (activityOptions[category]||[]).forEach(activity=>{
+  const option=document.createElement("option");
+  option.value=activity;
+  option.textContent=activity;
+  select.appendChild(option);
  });
+}
+
+function saveTasks(){
+ localStorage.setItem("meuTempoTasks",JSON.stringify(tasks));
+}
+
+function saveHistory(){
+ localStorage.setItem("meuTempoHistory",JSON.stringify(historyEntries));
+}
+
+function showPage(page){
+ $("plannerPage").style.display=page==="planner"?"block":"none";
+ $("historyPage").style.display=page==="history"?"block":"none";
+ $("plannerTab").classList.toggle("active",page==="planner");
+ $("historyTab").classList.toggle("active",page==="history");
+
+ if(page==="history")renderHistory();
+}
+
+function formatDuration(seconds){
+ const totalMinutes=Math.floor(Math.max(0,seconds)/60);
+ const hours=Math.floor(totalMinutes/60);
+ const minutes=totalMinutes%60;
+
+ if(hours>0)return hours+"h "+String(minutes).padStart(2,"0")+"min";
+ return totalMinutes+" min";
+}
+
+function localDateKey(date){
+ return date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+String(date.getDate()).padStart(2,"0");
+}
+
+function renderHistory(){
+ const list=$("historyList");
+ list.innerHTML="";
+
+ const sorted=[...historyEntries].sort((a,b)=>new Date(b.completedAt)-new Date(a.completedAt));
+
+ $("historyCount").textContent=sorted.length;
+
+ const totalSeconds=sorted.reduce((sum,item)=>sum+(Number(item.actualSeconds)||0),0);
+ $("historyTotalTime").textContent=formatDuration(totalSeconds);
+
+ $("historyEmpty").style.display=sorted.length?"none":"block";
+
+ const groups={};
+
+ sorted.forEach(entry=>{
+  const date=new Date(entry.completedAt);
+  const key=localDateKey(date);
+
+  if(!groups[key])groups[key]=[];
+  groups[key].push(entry);
+ });
+
+ Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(key=>{
+  const date=new Date(key+"T12:00:00");
+
+  const heading=document.createElement("h3");
+  heading.className="history-date";
+  heading.textContent=date.toLocaleDateString("pt-BR",{
+   weekday:"long",
+   day:"2-digit",
+   month:"long",
+   year:"numeric"
+  });
+  list.appendChild(heading);
+
+  groups[key].forEach(entry=>{
+   const card=document.createElement("article");
+   card.className="history-entry";
+
+   const title=document.createElement("div");
+   title.className="history-entry-title";
+   title.textContent=entry.name||"Atividade";
+
+   const meta=document.createElement("div");
+   meta.className="history-meta";
+
+   const completedDate=new Date(entry.completedAt);
+   const time=completedDate.toLocaleTimeString("pt-BR",{
+    hour:"2-digit",
+    minute:"2-digit"
+   });
+
+   meta.textContent=(entry.category?entry.category+" · ":"")+"Concluída às "+time;
+
+   const times=document.createElement("div");
+   times.className="history-times";
+
+   const planned=document.createElement("span");
+   planned.textContent="Planejado: "+formatDuration(Number(entry.plannedSeconds)||0);
+
+   const actual=document.createElement("span");
+   actual.textContent="Realizado: "+formatDuration(Number(entry.actualSeconds)||0);
+
+   times.append(planned,actual);
+   card.append(title,meta,times);
+   list.appendChild(card);
+  });
+ });
+}
+
+function recordCompletedTask(){
+ const task=tasks[currentIndex];
+
+ if(!task||task.recordHistory!==true)return;
+
+ const activeMs=taskElapsedMs+(taskActiveStartedAt?Date.now()-taskActiveStartedAt:0);
+
+ historyEntries.push({
+  id:String(Date.now())+"-"+String(Math.random()).slice(2,8),
+  name:task.name,
+  category:task.category||"",
+  plannedSeconds:Number(task.minutes)*60,
+  actualSeconds:Math.max(0,Math.round(activeMs/1000)),
+  completedAt:new Date().toISOString()
+ });
+
+ taskActiveStartedAt=0;
+ taskElapsedMs=0;
+ saveHistory();
+}
+
+function renderTasks(){
+ $("taskList").innerHTML="";
+ $("emptyMessage").style.display=tasks.length?"none":"block";
+
+ tasks.forEach((task,index)=>{
+  const item=document.createElement("div");
+  item.className="task";
+
+  const name=document.createElement("div");
+  name.className="taskname";
+  name.textContent=task.name;
+
+  const duration=document.createElement("small");
+  duration.textContent=task.minutes+" min";
+
+  const up=document.createElement("button");
+  up.className="secondary";
+  up.textContent="↑";
+  up.title="Mover para cima";
+  up.disabled=index===0;
+  up.onclick=()=>moveTask(index,-1);
+
+  const down=document.createElement("button");
+  down.className="secondary";
+  down.textContent="↓";
+  down.title="Mover para baixo";
+  down.disabled=index===tasks.length-1;
+  down.onclick=()=>moveTask(index,1);
+
+  const edit=document.createElement("button");
+  edit.className="secondary";
+  edit.textContent="Editar";
+  edit.onclick=()=>editTask(index);
+
+  const del=document.createElement("button");
+  del.className="danger";
+  del.textContent="Excluir";
+  del.onclick=()=>deleteTask(index);
+
+  item.append(name,duration,up,down,edit,del);
+  $("taskList").appendChild(item);
+ });
+
  $("startButton").disabled=!tasks.length||running;
 }
+
 function addTask(){
- const typedName=$("taskName").value.trim(),suggested=$("activitySuggestion").value;
- const name=typedName||suggested,category=$("taskCategory").value,minutes=Number($("taskMinutes").value);
- if(!name){alert("Escolha uma sugestão ou escreva o nome da atividade.");$("taskName").focus();return;}
- if(!Number.isInteger(minutes)||minutes<1||minutes>600){alert("Informe uma duração entre 1 e 600 minutos.");return;}
- tasks.push({name,minutes,category});$("taskName").value="";$("activitySuggestion").value="";saveTasks();renderTasks();$("taskName").focus();
+ const typedName=$("taskName").value.trim();
+ const suggested=$("activitySuggestion").value;
+ const name=typedName||suggested;
+ const category=$("taskCategory").value;
+ const minutes=Number($("taskMinutes").value);
+
+ if(!name){
+  alert("Escolha uma sugestão ou escreva o nome da atividade.");
+  $("taskName").focus();
+  return;
+ }
+
+ if(!Number.isInteger(minutes)||minutes<1||minutes>600){
+  alert("Informe uma duração entre 1 e 600 minutos.");
+  return;
+ }
+
+ tasks.push({
+  name,
+  minutes,
+  category,
+  recordHistory:$("taskHistory").value==="sim"
+ });
+
+ $("taskName").value="";
+ $("activitySuggestion").value="";
+ $("taskHistory").value="nao";
+
+ saveTasks();
+ renderTasks();
+ $("taskName").focus();
 }
-function moveTask(index,direction){const target=index+direction;if(target<0||target>=tasks.length)return;[tasks[index],tasks[target]]=[tasks[target],tasks[index]];saveTasks();renderTasks();}
+
+function moveTask(index,direction){
+ const target=index+direction;
+
+ if(target<0||target>=tasks.length)return;
+
+ [tasks[index],tasks[target]]=[tasks[target],tasks[index]];
+
+ saveTasks();
+ renderTasks();
+}
+
 function editTask(index){
- const task=tasks[index],name=prompt("Nome da atividade:",task.name);if(name===null)return;
- const minutes=prompt("Duração em minutos:",task.minutes);if(minutes===null)return;
- const n=Number(minutes);if(!name.trim()||!Number.isInteger(n)||n<1||n>600){alert("Nome ou duração inválidos.");return;}
- tasks[index]={...task,name:name.trim(),minutes:n};saveTasks();renderTasks();
+ const task=tasks[index];
+ const name=prompt("Nome da atividade:",task.name);
+
+ if(name===null)return;
+
+ const minutes=prompt("Duração em minutos:",task.minutes);
+
+ if(minutes===null)return;
+
+ const n=Number(minutes);
+
+ if(!name.trim()||!Number.isInteger(n)||n<1||n>600){
+  alert("Nome ou duração inválidos.");
+  return;
+ }
+
+ const recordHistory=confirm("Registrar esta atividade no histórico?\n\nOK = Sim\nCancelar = Não");
+
+ tasks[index]={
+  ...task,
+  name:name.trim(),
+  minutes:n,
+  recordHistory
+ };
+
+ saveTasks();
+ renderTasks();
 }
-function deleteTask(index){if(!confirm("Excluir esta atividade?"))return;tasks.splice(index,1);saveTasks();renderTasks();}
-function clearTasks(){if(!tasks.length)return;if(!confirm("Apagar todas as tarefas?"))return;tasks=[];saveTasks();renderTasks();}
-function getBreak(task){const limit=Math.max(1,Number($("breakLimit").value)||15),short=Math.max(0,Number($("shortBreak").value)||0),long=Math.max(0,Number($("longBreak").value)||0);return task.minutes<limit?short:long;}
-function getBreakMessage(){let options=breakMessages.filter(message=>message!==lastBreakMessage);if(!options.length)options=breakMessages;const message=options[Math.floor(Math.random()*options.length)];lastBreakMessage=message;return message;}
-async function startProgram(){if(!tasks.length)return;if(!confirm("Preparado para começar sua programação?"))return;currentIndex=0;running=true;paused=false;inBreak=false;$("execution").classList.add("active");$("startButton").disabled=true;try{if(!document.fullscreenElement&&$("execution").requestFullscreen)await $("execution").requestFullscreen();}catch(error){console.log("Tela cheia não disponível:",error);}startTask();}
-function startTask(){if(currentIndex>=tasks.length){finishProgram(true);return;}inBreak=false;$("execution").classList.remove("break-mode");$("breakMessage").style.display="none";remaining=tasks[currentIndex].minutes*60;totalDuration=remaining;$("execTag").textContent="TAREFA "+(currentIndex+1)+" DE "+tasks.length;$("execName").textContent=tasks[currentIndex].name;$("status").textContent="Concentre-se nesta tarefa.";$("pauseButton").textContent="Pausar";paused=false;updateClock();beginTimer();}
-function startBreak(){const duration=getBreak(tasks[currentIndex]);currentIndex++;if(currentIndex>=tasks.length){finishProgram(true);return;}if(duration<=0){startTask();return;}inBreak=true;$("execution").classList.add("break-mode");remaining=duration*60;totalDuration=remaining;$("execTag").textContent="INTERVALO";$("execName").textContent="Hora de respirar";$("breakMessage").textContent=getBreakMessage();$("breakMessage").style.display="block";$("status").textContent="Descanse. A próxima tarefa virá em seguida.";$("pauseButton").textContent="Pausar";paused=false;updateClock();beginTimer();}
-function beginTimer(){clearInterval(timer);deadline=Date.now()+remaining*1000;timer=setInterval(()=>{if(paused)return;remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));updateClock();if(remaining<=0){clearInterval(timer);if(inBreak){playSound();startTask();}else{if(currentIndex<tasks.length-1)playSound();startBreak();}}},250);}
-function updateClock(){const m=Math.floor(remaining/60),s=remaining%60;$("clock").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");$("progress").textContent=inBreak?"Intervalo entre tarefas":"Tarefa "+(currentIndex+1)+" de "+tasks.length;const elapsed=Math.max(0,totalDuration-remaining),percent=totalDuration>0?Math.min(100,(elapsed/totalDuration)*100):0;$("progressFill").style.width=percent+"%";$("progressPercent").textContent=Math.floor(percent)+"% concluído";const nextIndex=inBreak?currentIndex:currentIndex+1;if(nextIndex<tasks.length){$("nextTask").textContent="A seguir: ";const strong=document.createElement("strong");strong.textContent=tasks[nextIndex].name;$("nextTask").appendChild(strong);}else{$("nextTask").textContent="Última tarefa da programação";}}
-function togglePause(){if(!running)return;if(!paused){remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));paused=true;$("pauseButton").textContent="Continuar";$("status").textContent="Cronômetro pausado.";updateClock();}else{paused=false;deadline=Date.now()+remaining*1000;$("pauseButton").textContent="Pausar";$("status").textContent="Continue no seu ritmo.";}}
-function skipStep(){if(!running)return;clearInterval(timer);if(inBreak){startTask();}else{startBreak();}}
-function playSound(){try{const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;audioContext=audioContext||new AudioCtx();if(audioContext.state==="suspended")audioContext.resume();[0,.22,.44].forEach(delay=>{const osc=audioContext.createOscillator(),gain=audioContext.createGain();osc.connect(gain);gain.connect(audioContext.destination);osc.frequency.value=880;gain.gain.setValueAtTime(.001,audioContext.currentTime+delay);gain.gain.exponentialRampToValueAtTime(.25,audioContext.currentTime+delay+.02);gain.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+delay+.18);osc.start(audioContext.currentTime+delay);osc.stop(audioContext.currentTime+delay+.2);});}catch(e){console.log("Som indisponível",e);}}
-async function toggleFullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else if($("execution").requestFullscreen)await $("execution").requestFullscreen();}catch(e){console.log(e);}}
+
+function deleteTask(index){
+ if(!confirm("Excluir esta atividade?"))return;
+
+ tasks.splice(index,1);
+ saveTasks();
+ renderTasks();
+}
+
+function clearTasks(){
+ if(!tasks.length)return;
+ if(!confirm("Apagar todas as tarefas?"))return;
+
+ tasks=[];
+ saveTasks();
+ renderTasks();
+}
+
+function getBreak(task){
+ const limit=Math.max(1,Number($("breakLimit").value)||15);
+ const short=Math.max(0,Number($("shortBreak").value)||0);
+ const long=Math.max(0,Number($("longBreak").value)||0);
+
+ return task.minutes<limit?short:long;
+}
+
+function getBreakMessage(){
+ let options=breakMessages.filter(message=>message!==lastBreakMessage);
+
+ if(!options.length)options=breakMessages;
+
+ const message=options[Math.floor(Math.random()*options.length)];
+ lastBreakMessage=message;
+
+ return message;
+}
+
+async function startProgram(){
+ if(!tasks.length)return;
+
+ if(!confirm("Preparado para começar sua programação?"))return;
+
+ currentIndex=0;
+ running=true;
+ paused=false;
+ inBreak=false;
+
+ $("execution").classList.add("active");
+ $("startButton").disabled=true;
+
+ try{
+  if(!document.fullscreenElement&&$("execution").requestFullscreen){
+   await $("execution").requestFullscreen();
+  }
+ }catch(error){
+  console.log("Tela cheia não disponível:",error);
+ }
+
+ startTask();
+}
+
+function startTask(){
+ if(currentIndex>=tasks.length){
+  finishProgram(true);
+  return;
+ }
+
+ inBreak=false;
+ taskElapsedMs=0;
+ taskActiveStartedAt=Date.now();
+
+ $("execution").classList.remove("break-mode");
+ $("breakMessage").style.display="none";
+
+ remaining=tasks[currentIndex].minutes*60;
+ totalDuration=remaining;
+
+ $("execTag").textContent="TAREFA "+(currentIndex+1)+" DE "+tasks.length;
+ $("execName").textContent=tasks[currentIndex].name;
+ $("status").textContent="Concentre-se nesta tarefa.";
+ $("pauseButton").textContent="Pausar";
+
+ paused=false;
+
+ updateClock();
+ beginTimer();
+}
+
+function startBreak(){
+ taskActiveStartedAt=0;
+
+ const duration=getBreak(tasks[currentIndex]);
+ currentIndex++;
+
+ if(currentIndex>=tasks.length){
+  finishProgram(true);
+  return;
+ }
+
+ if(duration<=0){
+  startTask();
+  return;
+ }
+
+ inBreak=true;
+
+ $("execution").classList.add("break-mode");
+
+ remaining=duration*60;
+ totalDuration=remaining;
+
+ $("execTag").textContent="INTERVALO";
+ $("execName").textContent="Hora de respirar";
+ $("breakMessage").textContent=getBreakMessage();
+ $("breakMessage").style.display="block";
+ $("status").textContent="Descanse. A próxima tarefa virá em seguida.";
+ $("pauseButton").textContent="Pausar";
+
+ paused=false;
+
+ updateClock();
+ beginTimer();
+}
+
+function beginTimer(){
+ clearInterval(timer);
+
+ deadline=Date.now()+remaining*1000;
+
+ timer=setInterval(()=>{
+  if(paused)return;
+
+  remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
+
+  updateClock();
+
+  if(remaining<=0){
+   clearInterval(timer);
+
+   if(inBreak){
+    playSound();
+    startTask();
+   }else{
+    recordCompletedTask();
+
+    if(currentIndex<tasks.length-1)playSound();
+
+    startBreak();
+   }
+  }
+ },250);
+}
+
+function updateClock(){
+ const m=Math.floor(remaining/60);
+ const s=remaining%60;
+
+ $("clock").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+
+ $("progress").textContent=inBreak
+  ?"Intervalo entre tarefas"
+  :"Tarefa "+(currentIndex+1)+" de "+tasks.length;
+
+ const elapsed=Math.max(0,totalDuration-remaining);
+ const percent=totalDuration>0?Math.min(100,(elapsed/totalDuration)*100):0;
+
+ $("progressFill").style.width=percent+"%";
+ $("progressPercent").textContent=Math.floor(percent)+"% concluído";
+
+ const nextIndex=inBreak?currentIndex:currentIndex+1;
+
+ if(nextIndex<tasks.length){
+  $("nextTask").textContent="A seguir: ";
+
+  const strong=document.createElement("strong");
+  strong.textContent=tasks[nextIndex].name;
+
+  $("nextTask").appendChild(strong);
+ }else{
+  $("nextTask").textContent="Última tarefa da programação";
+ }
+}
+
+function togglePause(){
+ if(!running)return;
+
+ if(!paused){
+  remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
+
+  if(!inBreak&&taskActiveStartedAt){
+   taskElapsedMs+=Date.now()-taskActiveStartedAt;
+   taskActiveStartedAt=0;
+  }
+
+  paused=true;
+
+  $("pauseButton").textContent="Continuar";
+  $("status").textContent="Cronômetro pausado.";
+
+  updateClock();
+ }else{
+  paused=false;
+  deadline=Date.now()+remaining*1000;
+
+  if(!inBreak)taskActiveStartedAt=Date.now();
+
+  $("pauseButton").textContent="Pausar";
+  $("status").textContent="Continue no seu ritmo.";
+ }
+}
+
+function skipStep(){
+ if(!running)return;
+
+ clearInterval(timer);
+
+ if(inBreak){
+  startTask();
+ }else{
+  startBreak();
+ }
+}
+
+function playSound(){
+ try{
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;
+
+  if(!AudioCtx)return;
+
+  audioContext=audioContext||new AudioCtx();
+
+  if(audioContext.state==="suspended")audioContext.resume();
+
+  [0,.22,.44].forEach(delay=>{
+   const osc=audioContext.createOscillator();
+   const gain=audioContext.createGain();
+
+   osc.connect(gain);
+   gain.connect(audioContext.destination);
+
+   osc.frequency.value=880;
+
+   gain.gain.setValueAtTime(.001,audioContext.currentTime+delay);
+   gain.gain.exponentialRampToValueAtTime(.25,audioContext.currentTime+delay+.02);
+   gain.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+delay+.18);
+
+   osc.start(audioContext.currentTime+delay);
+   osc.stop(audioContext.currentTime+delay+.2);
+  });
+ }catch(e){
+  console.log("Som indisponível",e);
+ }
+}
+
+async function toggleFullscreen(){
+ try{
+  if(document.fullscreenElement){
+   await document.exitFullscreen();
+  }else if($("execution").requestFullscreen){
+   await $("execution").requestFullscreen();
+  }
+ }catch(e){
+  console.log(e);
+ }
+}
+
 async function toggleRecording(){
- if(mediaRecorder&&mediaRecorder.state==="recording"){mediaRecorder.stop();return;}
- if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){alert("A gravação de tela não está disponível neste navegador.");return;}
- try{recordingStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:false});recordedChunks=[];const mimeType=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")?"video/webm;codecs=vp9":"video/webm";mediaRecorder=new MediaRecorder(recordingStream,{mimeType});
-  mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recordedChunks.push(e.data);};
-  mediaRecorder.onstop=()=>{const blob=new Blob(recordedChunks,{type:"video/webm"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="meu-tempo-"+new Date().toISOString().replace(/[:.]/g,"-")+".webm";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);if(recordingStream){recordingStream.getTracks().forEach(track=>track.stop());recordingStream=null;}$("recordButton").textContent="Gravar vídeo";$("recordStatus").textContent="Gravação salva no dispositivo.";mediaRecorder=null;};
-  recordingStream.getVideoTracks()[0].addEventListener("ended",()=>{if(mediaRecorder&&mediaRecorder.state==="recording")mediaRecorder.stop();});mediaRecorder.start();$("recordButton").textContent="Parar gravação";$("recordStatus").textContent="Gravando a tela...";
- }catch(error){if(recordingStream){recordingStream.getTracks().forEach(track=>track.stop());recordingStream=null;}$("recordStatus").textContent="Gravação cancelada ou não autorizada.";console.log("Gravação:",error);}
+ if(mediaRecorder&&mediaRecorder.state==="recording"){
+  mediaRecorder.stop();
+  return;
+ }
+
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){
+  alert("A gravação de tela não está disponível neste navegador.");
+  return;
+ }
+
+ try{
+  recordingStream=await navigator.mediaDevices.getDisplayMedia({
+   video:{frameRate:30},
+   audio:false
+  });
+
+  recordedChunks=[];
+
+  const mimeType=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
+   ?"video/webm;codecs=vp9"
+   :"video/webm";
+
+  mediaRecorder=new MediaRecorder(recordingStream,{mimeType});
+
+  mediaRecorder.ondataavailable=e=>{
+   if(e.data.size>0)recordedChunks.push(e.data);
+  };
+
+  mediaRecorder.onstop=()=>{
+   const blob=new Blob(recordedChunks,{type:"video/webm"});
+   const url=URL.createObjectURL(blob);
+   const a=document.createElement("a");
+
+   a.href=url;
+   a.download="meu-tempo-"+new Date().toISOString().replace(/[:.]/g,"-")+".webm";
+
+   document.body.appendChild(a);
+   a.click();
+   a.remove();
+
+   setTimeout(()=>URL.revokeObjectURL(url),1000);
+
+   if(recordingStream){
+    recordingStream.getTracks().forEach(track=>track.stop());
+    recordingStream=null;
+   }
+
+   $("recordButton").textContent="Gravar vídeo";
+   $("recordStatus").textContent="Gravação salva no dispositivo.";
+
+   mediaRecorder=null;
+  };
+
+  recordingStream.getVideoTracks()[0].addEventListener("ended",()=>{
+   if(mediaRecorder&&mediaRecorder.state==="recording")mediaRecorder.stop();
+  });
+
+  mediaRecorder.start();
+
+  $("recordButton").textContent="Parar gravação";
+  $("recordStatus").textContent="Gravando a tela...";
+ }catch(error){
+  if(recordingStream){
+   recordingStream.getTracks().forEach(track=>track.stop());
+   recordingStream=null;
+  }
+
+  $("recordStatus").textContent="Gravação cancelada ou não autorizada.";
+  console.log("Gravação:",error);
+ }
 }
-function finishProgram(completed=false){clearInterval(timer);timer=null;running=false;paused=false;if(mediaRecorder&&mediaRecorder.state==="recording"){mediaRecorder.stop();}else if(recordingStream){recordingStream.getTracks().forEach(track=>track.stop());recordingStream=null;}$("execution").classList.remove("active","break-mode");$("breakMessage").style.display="none";$("startButton").disabled=!tasks.length;$("progressFill").style.width="0%";$("progressPercent").textContent="0% concluído";$("nextTask").textContent="A seguir: --";if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});if(completed){playSound();alert("Parabéns! Você concluiu sua programação.");}}
-document.addEventListener("fullscreenchange",()=>{$("exitFullscreen").textContent=document.fullscreenElement?"Sair da tela cheia":"Ativar tela cheia";});
-if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("./sw.js").then(()=>console.log("Meu Tempo: sistema offline conectado!")).catch(error=>console.error("Erro no sistema offline:",error));});}
+
+function finishProgram(completed=false){
+ clearInterval(timer);
+ timer=null;
+ running=false;
+ paused=false;
+ taskActiveStartedAt=0;
+ taskElapsedMs=0;
+
+ if(mediaRecorder&&mediaRecorder.state==="recording"){
+  mediaRecorder.stop();
+ }else if(recordingStream){
+  recordingStream.getTracks().forEach(track=>track.stop());
+  recordingStream=null;
+ }
+
+ $("execution").classList.remove("active","break-mode");
+ $("breakMessage").style.display="none";
+ $("startButton").disabled=!tasks.length;
+ $("progressFill").style.width="0%";
+ $("progressPercent").textContent="0% concluído";
+ $("nextTask").textContent="A seguir: --";
+
+ if(document.fullscreenElement){
+  document.exitFullscreen().catch(()=>{});
+ }
+
+ if(completed){
+  playSound();
+  alert("Parabéns! Você concluiu sua programação.");
+ }
+}
+
+document.addEventListener("fullscreenchange",()=>{
+ $("exitFullscreen").textContent=document.fullscreenElement
+  ?"Sair da tela cheia"
+  :"Ativar tela cheia";
+});
+
+if("serviceWorker" in navigator){
+ window.addEventListener("load",()=>{
+  navigator.serviceWorker.register("./sw.js")
+   .then(()=>console.log("Meu Tempo: sistema offline conectado!"))
+   .catch(error=>console.error("Erro no sistema offline:",error));
+ });
+}
+
 $("taskCategory").addEventListener("change",updateActivitySuggestions);
-$("activitySuggestion").addEventListener("change",()=>{if($("activitySuggestion").value)$("taskName").value=$("activitySuggestion").value;});
-$("taskName").addEventListener("input",()=>{$("activitySuggestion").value="";});
-$("taskName").addEventListener("keydown",e=>{if(e.key==="Enter")addTask();});
-updateActivitySuggestions();renderTasks();
+
+$("activitySuggestion").addEventListener("change",()=>{
+ if($("activitySuggestion").value){
+  $("taskName").value=$("activitySuggestion").value;
+ }
+});
+
+$("taskName").addEventListener("input",()=>{
+ $("activitySuggestion").value="";
+});
+
+$("taskName").addEventListener("keydown",e=>{
+ if(e.key==="Enter")addTask();
+});
+
+updateActivitySuggestions();
+renderTasks();
+renderHistory();
 </script>
 </body>
 </html>
