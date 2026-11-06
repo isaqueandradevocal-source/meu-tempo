@@ -1,4 +1,4 @@
-
+```html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -8,20 +8,19 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#172033">
 <meta name="description" content="Meu Tempo — Planejador de execução.">
-
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:#f3f5f8;color:#202632}
 header{padding:22px;background:#172033;color:white}
 header h1{margin:0;font-size:26px}
-header p{margin:6px 0 0;color:#cbd5e1}
+header p{margin:6px 0 0;color:#cbd5e1;line-height:1.4}
 main{max-width:850px;margin:auto;padding:20px}
 .panel{background:white;border-radius:14px;padding:18px;margin-bottom:18px;box-shadow:0 3px 12px #0000000c}
 h2{font-size:19px;margin:0 0 15px}
-input{padding:12px;border:1px solid #ccd2dc;border-radius:8px;font-size:16px;min-width:0}
-.addrow{display:flex;gap:8px}
-.addrow input:first-child{flex:1}
-.addrow input[type=number]{width:90px}
+input,select{padding:12px;border:1px solid #ccd2dc;border-radius:8px;font-size:16px;min-width:0;background:white;color:#202632}
+.add-grid{display:grid;grid-template-columns:1fr 1fr 110px;gap:9px}
+.add-grid .wide{grid-column:1/-1}
+.add-grid button{grid-column:1/-1}
 button{border:0;border-radius:8px;padding:11px 15px;background:#2563eb;color:white;font-size:14px;font-weight:bold;cursor:pointer}
 button:disabled{opacity:.4;cursor:not-allowed}
 button.secondary{background:#e8edf5;color:#263246}
@@ -29,724 +28,227 @@ button.danger{background:#fee2e2;color:#991b1b}
 .task{display:flex;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid #edf0f4}
 .task:last-child{border:0}
 .taskname{flex:1;min-width:0;overflow-wrap:anywhere}
-.task small{color:#687386}
+.task small{color:#687386;white-space:nowrap}
 .task button{padding:8px 10px}
 .settings{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .settings label{font-size:14px;color:#475569}
 .settings input{width:70px;padding:8px}
 .actions{display:flex;gap:8px;flex-wrap:wrap}
 .note{font-size:13px;color:#64748b;line-height:1.5}
-
+.field-label{display:block;font-size:13px;color:#475569;margin:0 0 5px}
+.field{min-width:0}
 /* TELA DE EXECUÇÃO */
-#execution{
- display:none;
- position:fixed;
- inset:0;
- width:100%;
- height:100%;
- height:100dvh;
- background:#090d16;
- color:white;
- z-index:9999;
- align-items:center;
- justify-content:center;
- text-align:center;
- padding:24px;
- overflow:auto;
-}
+#execution{display:none;position:fixed;inset:0;width:100%;height:100%;height:100dvh;background:#090d16;color:white;z-index:9999;align-items:center;justify-content:center;text-align:center;padding:24px;overflow:auto}
 #execution.active{display:flex}
 .exec-content{width:100%;max-width:700px}
 .exec-tag{color:#93a4bd;text-transform:uppercase;letter-spacing:2px;font-size:13px}
 #execName{font-size:clamp(28px,6vw,48px);margin:25px 0}
-#clock{
- font-size:clamp(76px,17vw,150px);
- font-weight:bold;
- letter-spacing:-5px;
- font-variant-numeric:tabular-nums;
- line-height:1.1;
-}
+#breakMessage{display:none;max-width:580px;margin:-8px auto 24px;padding:14px 18px;border:1px solid #34445e;border-radius:12px;background:#121c2d;color:#dbeafe;font-size:clamp(16px,3vw,20px);line-height:1.5}
+#clock{font-size:clamp(76px,17vw,150px);font-weight:bold;letter-spacing:-5px;font-variant-numeric:tabular-nums;line-height:1.1}
 #progress{color:#9caec8;margin:12px 0 18px}
-
-/* BARRA DE PROGRESSO */
-.progress-track{
- width:100%;
- height:16px;
- background:#26334a;
- border-radius:30px;
- overflow:hidden;
- margin:0 auto 28px;
- box-shadow:inset 0 2px 5px #0005;
-}
-.progress-fill{
- width:0%;
- height:100%;
- background:linear-gradient(90deg,#2563eb,#38bdf8);
- border-radius:30px;
- transition:width .25s linear;
-}
-#progressPercent{
- color:#93a4bd;
- font-size:13px;
- margin-top:-20px;
- margin-bottom:25px;
-}
-
-/* PRÓXIMA TAREFA */
-#nextTask{
- color:#8290a5;
- font-size:13px;
- text-align:right;
- margin-top:-15px;
- margin-bottom:25px;
-}
+.progress-track{width:100%;height:16px;background:#26334a;border-radius:30px;overflow:hidden;margin:0 auto 28px;box-shadow:inset 0 2px 5px #0005}
+.progress-fill{width:0%;height:100%;background:linear-gradient(90deg,#2563eb,#38bdf8);border-radius:30px;transition:width .25s linear}
+#progressPercent{color:#93a4bd;font-size:13px;margin-top:-20px;margin-bottom:25px}
+#nextTask{color:#8290a5;font-size:13px;text-align:right;margin-top:-15px;margin-bottom:25px}
 #nextTask strong{color:#b8c5d8;font-weight:normal}
-
 .exec-buttons{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
 .exec-buttons button{padding:14px 20px;font-size:15px}
 #status{color:#a9b8ce;margin:18px 0;min-height:20px}
 #recordStatus{font-size:12px;color:#e5bd69;margin-top:12px}
-#exitFullscreen{
- position:absolute;
- top:14px;
- right:14px;
- background:#26334a;
- color:white;
- padding:10px 13px;
-}
+#exitFullscreen{position:absolute;top:14px;right:14px;background:#26334a;color:white;padding:10px 13px}
 #execution:fullscreen{background:#090d16}
-
-/* AJUSTES PARA CELULAR */
 @media(max-width:520px){
- main{padding:12px}
- .panel{padding:14px}
- .task{flex-wrap:wrap}
- .taskname{min-width:45%}
- .addrow{flex-wrap:wrap}
- .addrow input:first-child{width:100%}
-
+ main{padding:12px}.panel{padding:14px}.task{flex-wrap:wrap}.taskname{min-width:45%}
+ .add-grid{grid-template-columns:1fr 95px}.add-grid .category-field{grid-column:1/-1}.add-grid .activity-field{grid-column:1/-1}.add-grid .custom-field{grid-column:1/-1}.add-grid .minutes-field{grid-column:1/-1}.add-grid button{grid-column:1/-1}
  #execution{padding:18px 14px}
-
- .exec-content{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
- }
-
+ .exec-content{display:flex;flex-direction:column;align-items:center;justify-content:center}
  #execTag{order:1}
-
- #clock{
-  order:2;
-  font-size:clamp(100px,29vw,180px);
-  letter-spacing:-5px;
-  line-height:1;
-  margin:12px 0;
- }
-
- #execName{
-  order:3;
-  font-size:clamp(25px,7vw,34px);
-  line-height:1.2;
-  margin:10px 0 22px;
- }
-
- #progress{
-  order:4;
-  margin:8px 0 15px;
- }
-
- .progress-track{
-  order:5;
-  height:13px;
- }
-
- #progressPercent{
-  order:6;
-  margin-top:8px;
-  margin-bottom:20px;
- }
-
- #nextTask{
-  order:7;
-  width:100%;
- }
-
- #status{order:8}
-
- .exec-buttons{
-  order:9;
-  gap:8px;
- }
-
+ #clock{order:2;font-size:clamp(100px,29vw,180px);letter-spacing:-5px;line-height:1;margin:12px 0}
+ #execName{order:3;font-size:clamp(25px,7vw,34px);line-height:1.2;margin:10px 0 22px}
+ #breakMessage{order:4;margin:0 auto 18px}
+ #progress{order:5;margin:8px 0 15px}
+ .progress-track{order:6;height:13px}
+ #progressPercent{order:7;margin-top:8px;margin-bottom:20px}
+ #nextTask{order:8;width:100%}
+ #status{order:9}
+ .exec-buttons{order:10;gap:8px}
  .exec-buttons button{padding:13px 14px}
-
- #recordStatus{order:10}
+ #recordStatus{order:11}
 }
 </style>
 </head>
-
 <body>
-
 <header>
  <h1>Meu Tempo</h1>
  <p>Planejador de execução — Organize seu dia. Concentre-se em uma tarefa por vez.</p>
 </header>
-
 <main>
-<section class="panel">
- <h2>Minha programação</h2>
-
- <div class="addrow">
-  <input id="taskName" placeholder="Ex.: Varrer a casa">
-  <input id="taskMinutes" type="number" min="1" max="600" value="10" aria-label="Minutos">
-  <button onclick="addTask()">Adicionar</button>
- </div>
-
- <p class="note">Digite o nome da tarefa e a duração em minutos.</p>
- <div id="taskList"></div>
- <p id="emptyMessage" class="note">Nenhuma tarefa adicionada ainda.</p>
-</section>
-
-<section class="panel">
- <h2>Configurar pausas</h2>
-
- <div class="settings">
-  <label>Pausa curta (min)
-   <input id="shortBreak" type="number" min="0" value="2">
-  </label>
-
-  <label>Pausa longa (min)
-   <input id="longBreak" type="number" min="0" value="5">
-  </label>
-
-  <label>Limite (min)
-   <input id="breakLimit" type="number" min="1" value="15">
-  </label>
- </div>
-
- <p class="note">Tarefas abaixo do limite usam a pausa curta. As demais usam a pausa longa. Não há pausa após a última tarefa.</p>
-</section>
-
-<section class="panel">
- <h2>Começar</h2>
-
- <div class="actions">
-  <button onclick="startProgram()" id="startButton">▶ Iniciar programação</button>
-  <button class="secondary" onclick="clearTasks()">Limpar tarefas</button>
- </div>
-</section>
+ <section class="panel">
+  <h2>Minha programação</h2>
+  <div class="add-grid">
+   <div class="field category-field">
+    <label class="field-label" for="taskCategory">Categoria</label>
+    <select id="taskCategory">
+     <option value="Casa">Casa</option><option value="Área externa">Área externa</option><option value="Cuidados pessoais">Cuidados pessoais</option><option value="Família">Família</option><option value="Trabalho">Trabalho</option><option value="Estudos">Estudos</option><option value="Espiritualidade">Espiritualidade</option><option value="Exercícios">Exercícios</option><option value="Outros">Outros</option>
+    </select>
+   </div>
+   <div class="field activity-field">
+    <label class="field-label" for="activitySuggestion">Sugestões de atividades</label>
+    <select id="activitySuggestion"><option value="">Escolha uma sugestão (opcional)</option></select>
+   </div>
+   <div class="field custom-field wide">
+    <label class="field-label" for="taskName">Nome da atividade — escolha uma sugestão ou escreva a sua</label>
+    <input id="taskName" class="wide" placeholder="Ex.: Organizar a estante" autocomplete="off">
+   </div>
+   <div class="field minutes-field">
+    <label class="field-label" for="taskMinutes">Duração (minutos)</label>
+    <input id="taskMinutes" type="number" min="1" max="600" value="10" aria-label="Minutos" style="width:100%">
+   </div>
+   <button onclick="addTask()">Adicionar atividade</button>
+  </div>
+  <p class="note">As sugestões são apenas um apoio. Você decide o que fazer e pode escrever qualquer atividade.</p>
+  <div id="taskList"></div>
+  <p id="emptyMessage" class="note">Nenhuma tarefa adicionada ainda.</p>
+ </section>
+ <section class="panel">
+  <h2>Configurar pausas</h2>
+  <div class="settings">
+   <label>Pausa curta (min)<br><input id="shortBreak" type="number" min="0" value="2"></label>
+   <label>Pausa longa (min)<br><input id="longBreak" type="number" min="0" value="5"></label>
+   <label>Limite (min)<br><input id="breakLimit" type="number" min="1" value="15"></label>
+  </div>
+  <p class="note">Tarefas abaixo do limite usam a pausa curta. As demais usam a pausa longa. Não há pausa após a última tarefa.</p>
+ </section>
+ <section class="panel">
+  <h2>Começar</h2>
+  <div class="actions">
+   <button onclick="startProgram()" id="startButton">▶ Iniciar programação</button>
+   <button class="secondary" onclick="clearTasks()">Limpar tarefas</button>
+  </div>
+ </section>
 </main>
-
 <div id="execution">
-
  <button id="exitFullscreen" onclick="toggleFullscreen()">Sair da tela cheia</button>
-
  <div class="exec-content">
   <div class="exec-tag" id="execTag">TAREFA 1</div>
   <h2 id="execName">Preparado?</h2>
+  <div id="breakMessage" aria-live="polite"></div>
   <div id="clock">00:00</div>
   <div id="progress">Vamos começar</div>
-
-  <div class="progress-track">
-   <div class="progress-fill" id="progressFill"></div>
-  </div>
-
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
   <div id="progressPercent">0% concluído</div>
   <div id="nextTask">A seguir: --</div>
   <div id="status"></div>
-
   <div class="exec-buttons">
    <button onclick="togglePause()" id="pauseButton">Pausar</button>
    <button class="secondary" onclick="skipStep()">Pular etapa</button>
    <button class="secondary" onclick="toggleRecording()" id="recordButton">Gravar vídeo</button>
    <button class="danger" onclick="finishProgram()">Encerrar</button>
   </div>
-
   <div id="recordStatus"></div>
  </div>
 </div>
-
 <script>
 let tasks=JSON.parse(localStorage.getItem("meuTempoTasks")||"[]");
-let currentIndex=0;
-let remaining=0;
-let totalDuration=0;
-let timer=null;
-let paused=false;
-let inBreak=false;
-let running=false;
-let audioContext=null;
-let deadline=0;
-
-let mediaRecorder=null;
-let recordedChunks=[];
-let recordingStream=null;
-
+let currentIndex=0,remaining=0,totalDuration=0,timer=null,paused=false,inBreak=false,running=false,audioContext=null,deadline=0;
+let mediaRecorder=null,recordedChunks=[],recordingStream=null,lastBreakMessage="";
 const $=id=>document.getElementById(id);
-
-function saveTasks(){
- localStorage.setItem("meuTempoTasks",JSON.stringify(tasks));
+const activityOptions={
+ "Casa":["Varrer a casa","Passar pano","Tirar poeira","Lavar a louça","Organizar um cômodo","Arrumar a cama"],
+ "Área externa":["Molhar plantas","Varrer o passeio","Limpar quintal","Recolher folhas","Organizar área externa"],
+ "Cuidados pessoais":["Tomar banho","Higiene pessoal","Organizar roupas","Cuidar de si","Fazer uma pausa para descanso"],
+ "Família":["Brincar com Theo","Tempo com a família","Conversar com Mille","Organizar coisas do Theo"],
+ "Trabalho":["Atender clientes","Organizar loja","Conferir produtos","Resolver pendências","Fazer relatórios"],
+ "Estudos":["Estudar Pedagogia","Assistir aula","Fazer atividade","Revisar conteúdo","Ler um livro"],
+ "Espiritualidade":["Ler a Bíblia","Preparar reunião","Estudar publicação","Meditar em um texto bíblico"],
+ "Exercícios":["Caminhar","Correr","Treino físico","Fazer alongamento"],
+ "Outros":["Outra atividade"]
+};
+const breakMessages=[
+ "Você concluiu mais uma etapa. Bom trabalho!",
+ "Mais uma tarefa vencida. Aproveite sua pausa.",
+ "Seu esforço está construindo bons resultados.",
+ "Está na hora de beber uma água.",
+ "Alongue um pouco o corpo e relaxe os ombros.",
+ "Respire fundo algumas vezes. Você não precisa ter pressa.",
+ "Observe o céu por alguns instantes.",
+ "Repare nos sons ao seu redor.",
+ "Aproveite esse momento para observar a natureza.",
+ "Leia um pequeno trecho de um livro.",
+ "Aprenda uma coisa nova hoje, mesmo que seja pequena.",
+ "Releia uma frase que tenha significado para você.",
+ "Pequenos passos também levam longe.",
+ "Não precisa fazer tudo de uma vez. Continue.",
+ "Disciplina é continuar mesmo quando a motivação diminui.",
+ "O que você fez bem nesta última etapa?",
+ "Aproveite o silêncio para organizar os pensamentos.",
+ "Lembre-se do propósito por trás do que está fazendo."
+];
+function updateActivitySuggestions(){
+ const category=$("taskCategory").value,select=$("activitySuggestion");
+ select.innerHTML="";
+ const first=document.createElement("option");first.value="";first.textContent="Escolha uma sugestão (opcional)";select.appendChild(first);
+ (activityOptions[category]||[]).forEach(activity=>{const option=document.createElement("option");option.value=activity;option.textContent=activity;select.appendChild(option);});
 }
-
+function saveTasks(){localStorage.setItem("meuTempoTasks",JSON.stringify(tasks));}
 function renderTasks(){
- $("taskList").innerHTML="";
- $("emptyMessage").style.display=tasks.length?"none":"block";
-
+ $("taskList").innerHTML="";$("emptyMessage").style.display=tasks.length?"none":"block";
  tasks.forEach((task,index)=>{
-  const item=document.createElement("div");
-  item.className="task";
-
-  const name=document.createElement("div");
-  name.className="taskname";
-  name.textContent=task.name;
-
-  const duration=document.createElement("small");
-  duration.textContent=task.minutes+" min";
-
-  const up=document.createElement("button");
-  up.className="secondary";
-  up.textContent="↑";
-  up.disabled=index===0;
-  up.onclick=()=>moveTask(index,-1);
-
-  const down=document.createElement("button");
-  down.className="secondary";
-  down.textContent="↓";
-  down.disabled=index===tasks.length-1;
-  down.onclick=()=>moveTask(index,1);
-
-  const edit=document.createElement("button");
-  edit.className="secondary";
-  edit.textContent="Editar";
-  edit.onclick=()=>editTask(index);
-
-  const del=document.createElement("button");
-  del.className="danger";
-  del.textContent="Excluir";
-  del.onclick=()=>deleteTask(index);
-
-  item.append(name,duration,up,down,edit,del);
-  $("taskList").appendChild(item);
+  const item=document.createElement("div");item.className="task";
+  const name=document.createElement("div");name.className="taskname";name.textContent=task.name;
+  const duration=document.createElement("small");duration.textContent=task.minutes+" min";
+  const up=document.createElement("button");up.className="secondary";up.textContent="↑";up.title="Mover para cima";up.disabled=index===0;up.onclick=()=>moveTask(index,-1);
+  const down=document.createElement("button");down.className="secondary";down.textContent="↓";down.title="Mover para baixo";down.disabled=index===tasks.length-1;down.onclick=()=>moveTask(index,1);
+  const edit=document.createElement("button");edit.className="secondary";edit.textContent="Editar";edit.onclick=()=>editTask(index);
+  const del=document.createElement("button");del.className="danger";del.textContent="Excluir";del.onclick=()=>deleteTask(index);
+  item.append(name,duration,up,down,edit,del);$("taskList").appendChild(item);
  });
-
  $("startButton").disabled=!tasks.length||running;
 }
-
 function addTask(){
- const name=$("taskName").value.trim();
- const minutes=Number($("taskMinutes").value);
-
- if(!name){
-  alert("Digite o nome da tarefa.");
-  return;
- }
-
- if(!Number.isInteger(minutes)||minutes<1||minutes>600){
-  alert("Informe uma duração entre 1 e 600 minutos.");
-  return;
- }
-
- tasks.push({name,minutes});
- $("taskName").value="";
- saveTasks();
- renderTasks();
- $("taskName").focus();
+ const typedName=$("taskName").value.trim(),suggested=$("activitySuggestion").value;
+ const name=typedName||suggested,category=$("taskCategory").value,minutes=Number($("taskMinutes").value);
+ if(!name){alert("Escolha uma sugestão ou escreva o nome da atividade.");$("taskName").focus();return;}
+ if(!Number.isInteger(minutes)||minutes<1||minutes>600){alert("Informe uma duração entre 1 e 600 minutos.");return;}
+ tasks.push({name,minutes,category});$("taskName").value="";$("activitySuggestion").value="";saveTasks();renderTasks();$("taskName").focus();
 }
-
-function moveTask(index,direction){
- const target=index+direction;
- if(target<0||target>=tasks.length)return;
-
- [tasks[index],tasks[target]]=[tasks[target],tasks[index]];
- saveTasks();
- renderTasks();
-}
-
+function moveTask(index,direction){const target=index+direction;if(target<0||target>=tasks.length)return;[tasks[index],tasks[target]]=[tasks[target],tasks[index]];saveTasks();renderTasks();}
 function editTask(index){
- const task=tasks[index];
-
- const name=prompt("Nome da tarefa:",task.name);
- if(name===null)return;
-
- const minutes=prompt("Duração em minutos:",task.minutes);
- if(minutes===null)return;
-
- const n=Number(minutes);
-
- if(!name.trim()||!Number.isInteger(n)||n<1||n>600){
-  alert("Nome ou duração inválidos.");
-  return;
- }
-
- tasks[index]={name:name.trim(),minutes:n};
- saveTasks();
- renderTasks();
+ const task=tasks[index],name=prompt("Nome da atividade:",task.name);if(name===null)return;
+ const minutes=prompt("Duração em minutos:",task.minutes);if(minutes===null)return;
+ const n=Number(minutes);if(!name.trim()||!Number.isInteger(n)||n<1||n>600){alert("Nome ou duração inválidos.");return;}
+ tasks[index]={...task,name:name.trim(),minutes:n};saveTasks();renderTasks();
 }
-
-function deleteTask(index){
- if(!confirm("Excluir esta tarefa?"))return;
-
- tasks.splice(index,1);
- saveTasks();
- renderTasks();
-}
-
-function clearTasks(){
- if(!tasks.length)return;
- if(!confirm("Apagar todas as tarefas?"))return;
-
- tasks=[];
- saveTasks();
- renderTasks();
-}
-
-function getBreak(task){
- const limit=Math.max(1,Number($("breakLimit").value)||15);
- const short=Math.max(0,Number($("shortBreak").value)||0);
- const long=Math.max(0,Number($("longBreak").value)||0);
-
- return task.minutes<limit?short:long;
-}
-
-async function startProgram(){
- if(!tasks.length)return;
- if(!confirm("Preparado para começar sua programação?"))return;
-
- currentIndex=0;
- running=true;
- paused=false;
- inBreak=false;
-
- $("execution").classList.add("active");
- $("startButton").disabled=true;
-
- try{
-  if(!document.fullscreenElement && $("execution").requestFullscreen){
-   await $("execution").requestFullscreen();
-  }
- }catch(error){
-  console.log("Tela cheia não disponível:",error);
- }
-
- startTask();
-}
-
-function startTask(){
- if(currentIndex>=tasks.length){
-  finishProgram(true);
-  return;
- }
-
- inBreak=false;
- remaining=tasks[currentIndex].minutes*60;
- totalDuration=remaining;
-
- $("execTag").textContent="TAREFA "+(currentIndex+1)+" DE "+tasks.length;
- $("execName").textContent=tasks[currentIndex].name;
- $("status").textContent="Concentre-se nesta tarefa.";
- $("pauseButton").textContent="Pausar";
-
- paused=false;
- updateClock();
- beginTimer();
-}
-
-function startBreak(){
- const duration=getBreak(tasks[currentIndex]);
- currentIndex++;
-
- if(currentIndex>=tasks.length){
-  finishProgram(true);
-  return;
- }
-
- if(duration<=0){
-  startTask();
-  return;
- }
-
- inBreak=true;
- remaining=duration*60;
- totalDuration=remaining;
-
- $("execTag").textContent="INTERVALO";
- $("execName").textContent="Hora de respirar";
- $("status").textContent="Descanse. A próxima tarefa virá em seguida.";
- $("pauseButton").textContent="Pausar";
-
- paused=false;
- updateClock();
- beginTimer();
-}
-
-function beginTimer(){
- clearInterval(timer);
- deadline=Date.now()+remaining*1000;
-
- timer=setInterval(()=>{
-  if(paused)return;
-
-  remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
-  updateClock();
-
-  if(remaining<=0){
-   clearInterval(timer);
-
-   if(inBreak){
-    playSound();
-    startTask();
-   }else{
-    // O encerramento da última tarefa toca o som em finishProgram.
-    if(currentIndex<tasks.length-1){
-     playSound();
-    }
-    startBreak();
-   }
-  }
- },250);
-}
-
-function updateClock(){
- const m=Math.floor(remaining/60);
- const s=remaining%60;
-
- $("clock").textContent=
-  String(m).padStart(2,"0")+":"+
-  String(s).padStart(2,"0");
-
- $("progress").textContent=inBreak
-  ?"Intervalo entre tarefas"
-  :"Tarefa "+(currentIndex+1)+" de "+tasks.length;
-
- const elapsed=Math.max(0,totalDuration-remaining);
- const percent=totalDuration>0
-  ?Math.min(100,(elapsed/totalDuration)*100)
-  :0;
-
- $("progressFill").style.width=percent+"%";
- $("progressPercent").textContent=Math.floor(percent)+"% concluído";
-
- const nextIndex=inBreak?currentIndex:currentIndex+1;
-
- if(nextIndex<tasks.length){
-  $("nextTask").innerHTML=
-   "A seguir: <strong>"+escapeHTML(tasks[nextIndex].name)+"</strong>";
- }else{
-  $("nextTask").textContent="Última tarefa da programação";
- }
-}
-
-function escapeHTML(text){
- return String(text).replace(/[&<>"']/g,function(char){
-  return {
-   "&":"&amp;",
-   "<":"&lt;",
-   ">":"&gt;",
-   '"':"&quot;",
-   "'":"&#39;"
-  }[char];
- });
-}
-
-function togglePause(){
- if(!running)return;
-
- if(!paused){
-  remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
-  paused=true;
-
-  $("pauseButton").textContent="Continuar";
-  $("status").textContent="Cronômetro pausado.";
-  updateClock();
- }else{
-  paused=false;
-  deadline=Date.now()+remaining*1000;
-
-  $("pauseButton").textContent="Pausar";
-  $("status").textContent="Continue no seu ritmo.";
- }
-}
-
-function skipStep(){
- if(!running)return;
-
- clearInterval(timer);
-
- if(inBreak){
-  startTask();
- }else{
-  startBreak();
- }
-}
-
-function playSound(){
- try{
-  const AudioCtx=window.AudioContext||window.webkitAudioContext;
-  if(!AudioCtx)return;
-
-  audioContext=audioContext||new AudioCtx();
-
-  if(audioContext.state==="suspended"){
-   audioContext.resume();
-  }
-
-  [0,0.22,0.44].forEach(delay=>{
-   const osc=audioContext.createOscillator();
-   const gain=audioContext.createGain();
-
-   osc.connect(gain);
-   gain.connect(audioContext.destination);
-
-   osc.frequency.value=880;
-
-   gain.gain.setValueAtTime(.001,audioContext.currentTime+delay);
-   gain.gain.exponentialRampToValueAtTime(.25,audioContext.currentTime+delay+.02);
-   gain.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+delay+.18);
-
-   osc.start(audioContext.currentTime+delay);
-   osc.stop(audioContext.currentTime+delay+.2);
-  });
- }catch(e){
-  console.log("Som indisponível",e);
- }
-}
-
-async function toggleFullscreen(){
- try{
-  if(document.fullscreenElement){
-   await document.exitFullscreen();
-  }else if($("execution").requestFullscreen){
-   await $("execution").requestFullscreen();
-  }
- }catch(e){
-  console.log(e);
- }
-}
-
+function deleteTask(index){if(!confirm("Excluir esta atividade?"))return;tasks.splice(index,1);saveTasks();renderTasks();}
+function clearTasks(){if(!tasks.length)return;if(!confirm("Apagar todas as tarefas?"))return;tasks=[];saveTasks();renderTasks();}
+function getBreak(task){const limit=Math.max(1,Number($("breakLimit").value)||15),short=Math.max(0,Number($("shortBreak").value)||0),long=Math.max(0,Number($("longBreak").value)||0);return task.minutes<limit?short:long;}
+function getBreakMessage(){let options=breakMessages.filter(message=>message!==lastBreakMessage);if(!options.length)options=breakMessages;const message=options[Math.floor(Math.random()*options.length)];lastBreakMessage=message;return message;}
+async function startProgram(){if(!tasks.length)return;if(!confirm("Preparado para começar sua programação?"))return;currentIndex=0;running=true;paused=false;inBreak=false;$("execution").classList.add("active");$("startButton").disabled=true;try{if(!document.fullscreenElement&&$("execution").requestFullscreen)await $("execution").requestFullscreen();}catch(error){console.log("Tela cheia não disponível:",error);}startTask();}
+function startTask(){if(currentIndex>=tasks.length){finishProgram(true);return;}inBreak=false;$("execution").classList.remove("break-mode");$("breakMessage").style.display="none";remaining=tasks[currentIndex].minutes*60;totalDuration=remaining;$("execTag").textContent="TAREFA "+(currentIndex+1)+" DE "+tasks.length;$("execName").textContent=tasks[currentIndex].name;$("status").textContent="Concentre-se nesta tarefa.";$("pauseButton").textContent="Pausar";paused=false;updateClock();beginTimer();}
+function startBreak(){const duration=getBreak(tasks[currentIndex]);currentIndex++;if(currentIndex>=tasks.length){finishProgram(true);return;}if(duration<=0){startTask();return;}inBreak=true;$("execution").classList.add("break-mode");remaining=duration*60;totalDuration=remaining;$("execTag").textContent="INTERVALO";$("execName").textContent="Hora de respirar";$("breakMessage").textContent=getBreakMessage();$("breakMessage").style.display="block";$("status").textContent="Descanse. A próxima tarefa virá em seguida.";$("pauseButton").textContent="Pausar";paused=false;updateClock();beginTimer();}
+function beginTimer(){clearInterval(timer);deadline=Date.now()+remaining*1000;timer=setInterval(()=>{if(paused)return;remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));updateClock();if(remaining<=0){clearInterval(timer);if(inBreak){playSound();startTask();}else{if(currentIndex<tasks.length-1)playSound();startBreak();}}},250);}
+function updateClock(){const m=Math.floor(remaining/60),s=remaining%60;$("clock").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");$("progress").textContent=inBreak?"Intervalo entre tarefas":"Tarefa "+(currentIndex+1)+" de "+tasks.length;const elapsed=Math.max(0,totalDuration-remaining),percent=totalDuration>0?Math.min(100,(elapsed/totalDuration)*100):0;$("progressFill").style.width=percent+"%";$("progressPercent").textContent=Math.floor(percent)+"% concluído";const nextIndex=inBreak?currentIndex:currentIndex+1;if(nextIndex<tasks.length){$("nextTask").textContent="A seguir: ";const strong=document.createElement("strong");strong.textContent=tasks[nextIndex].name;$("nextTask").appendChild(strong);}else{$("nextTask").textContent="Última tarefa da programação";}}
+function togglePause(){if(!running)return;if(!paused){remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));paused=true;$("pauseButton").textContent="Continuar";$("status").textContent="Cronômetro pausado.";updateClock();}else{paused=false;deadline=Date.now()+remaining*1000;$("pauseButton").textContent="Pausar";$("status").textContent="Continue no seu ritmo.";}}
+function skipStep(){if(!running)return;clearInterval(timer);if(inBreak){startTask();}else{startBreak();}}
+function playSound(){try{const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;audioContext=audioContext||new AudioCtx();if(audioContext.state==="suspended")audioContext.resume();[0,.22,.44].forEach(delay=>{const osc=audioContext.createOscillator(),gain=audioContext.createGain();osc.connect(gain);gain.connect(audioContext.destination);osc.frequency.value=880;gain.gain.setValueAtTime(.001,audioContext.currentTime+delay);gain.gain.exponentialRampToValueAtTime(.25,audioContext.currentTime+delay+.02);gain.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+delay+.18);osc.start(audioContext.currentTime+delay);osc.stop(audioContext.currentTime+delay+.2);});}catch(e){console.log("Som indisponível",e);}}
+async function toggleFullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else if($("execution").requestFullscreen)await $("execution").requestFullscreen();}catch(e){console.log(e);}}
 async function toggleRecording(){
- if(mediaRecorder && mediaRecorder.state==="recording"){
-  mediaRecorder.stop();
-  return;
- }
-
- if(!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia){
-  alert("A gravação de tela não está disponível neste navegador.");
-  return;
- }
-
- try{
-  recordingStream=await navigator.mediaDevices.getDisplayMedia({
-   video:{frameRate:30},
-   audio:false
-  });
-
-  recordedChunks=[];
-
-  const mimeType=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-   ?"video/webm;codecs=vp9":"video/webm";
-
-  mediaRecorder=new MediaRecorder(recordingStream,{mimeType});
-
-  mediaRecorder.ondataavailable=e=>{
-   if(e.data.size>0){
-    recordedChunks.push(e.data);
-   }
-  };
-
-  mediaRecorder.onstop=()=>{
-   const blob=new Blob(recordedChunks,{type:"video/webm"});
-   const url=URL.createObjectURL(blob);
-
-   const a=document.createElement("a");
-   a.href=url;
-   a.download="meu-tempo-"+new Date().toISOString().replace(/[:.]/g,"-")+".webm";
-   document.body.appendChild(a);
-   a.click();
-   a.remove();
-
-   setTimeout(()=>URL.revokeObjectURL(url),1000);
-
-   if(recordingStream){
-    recordingStream.getTracks().forEach(track=>track.stop());
-    recordingStream=null;
-   }
-
-   $("recordButton").textContent="Gravar vídeo";
-   $("recordStatus").textContent="Gravação salva no dispositivo.";
-   mediaRecorder=null;
-  };
-
-  recordingStream.getVideoTracks()[0].addEventListener("ended",()=>{
-   if(mediaRecorder && mediaRecorder.state==="recording"){
-    mediaRecorder.stop();
-   }
-  });
-
-  mediaRecorder.start();
-
-  $("recordButton").textContent="Parar gravação";
-  $("recordStatus").textContent="Gravando a tela...";
-
- }catch(error){
-  if(recordingStream){
-   recordingStream.getTracks().forEach(track=>track.stop());
-   recordingStream=null;
-  }
-
-  $("recordStatus").textContent="Gravação cancelada ou não autorizada.";
-  console.log("Gravação:",error);
- }
+ if(mediaRecorder&&mediaRecorder.state==="recording"){mediaRecorder.stop();return;}
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){alert("A gravação de tela não está disponível neste navegador.");return;}
+ try{recordingStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:false});recordedChunks=[];const mimeType=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")?"video/webm;codecs=vp9":"video/webm";mediaRecorder=new MediaRecorder(recordingStream,{mimeType});
+  mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recordedChunks.push(e.data);};
+  mediaRecorder.onstop=()=>{const blob=new Blob(recordedChunks,{type:"video/webm"}),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download="meu-tempo-"+new Date().toISOString().replace(/[:.]/g,"-")+".webm";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);if(recordingStream){recordingStream.getTracks().forEach(track=>track.stop());recordingStream=null;}$("recordButton").textContent="Gravar vídeo";$("recordStatus").textContent="Gravação salva no dispositivo.";mediaRecorder=null;};
+  recordingStream.getVideoTracks()[0].addEventListener("ended",()=>{if(mediaRecorder&&mediaRecorder.state==="recording")mediaRecorder.stop();});mediaRecorder.start();$("recordButton").textContent="Parar gravação";$("recordStatus").textContent="Gravando a tela...";
+ }catch(error){if(recordingStream){recordingStream.getTracks().forEach(track=>track.stop());recordingStream=null;}$("recordStatus").textContent="Gravação cancelada ou não autorizada.";console.log("Gravação:",error);}
 }
-
-function finishProgram(completed=false){
- clearInterval(timer);
- timer=null;
-
- running=false;
- paused=false;
-
- if(mediaRecorder && mediaRecorder.state==="recording"){
-  mediaRecorder.stop();
- }else if(recordingStream){
-  recordingStream.getTracks().forEach(track=>track.stop());
-  recordingStream=null;
- }
-
- $("execution").classList.remove("active");
- $("startButton").disabled=!tasks.length;
-
- $("progressFill").style.width="0%";
- $("progressPercent").textContent="0% concluído";
- $("nextTask").textContent="A seguir: --";
-
- if(document.fullscreenElement){
-  document.exitFullscreen().catch(()=>{});
- }
-
- if(completed){
-  playSound();
-  alert("Parabéns! Você concluiu sua programação.");
- }
-}
-
-document.addEventListener("fullscreenchange",()=>{
- $("exitFullscreen").textContent=document.fullscreenElement
-  ?"Sair da tela cheia":"Ativar tela cheia";
-});
-
-if("serviceWorker" in navigator){
- window.addEventListener("load",()=>{
-  navigator.serviceWorker.register("./sw.js")
-   .then(()=>console.log("Meu Tempo: sistema offline conectado!"))
-   .catch(error=>console.error("Erro no sistema offline:",error));
- });
-}
-
-$("taskName").addEventListener("keydown",e=>{
- if(e.key==="Enter")addTask();
-});
-
-renderTasks();
+function finishProgram(completed=false){clearInterval(timer);timer=null;running=false;paused=false;if(mediaRecorder&&mediaRecorder.state==="recording"){mediaRecorder.stop();}else if(recordingStream){recordingStream.getTracks().forEach(track=>track.stop());recordingStream=null;}$("execution").classList.remove("active","break-mode");$("breakMessage").style.display="none";$("startButton").disabled=!tasks.length;$("progressFill").style.width="0%";$("progressPercent").textContent="0% concluído";$("nextTask").textContent="A seguir: --";if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});if(completed){playSound();alert("Parabéns! Você concluiu sua programação.");}}
+document.addEventListener("fullscreenchange",()=>{$("exitFullscreen").textContent=document.fullscreenElement?"Sair da tela cheia":"Ativar tela cheia";});
+if("serviceWorker" in navigator){window.addEventListener("load",()=>{navigator.serviceWorker.register("./sw.js").then(()=>console.log("Meu Tempo: sistema offline conectado!")).catch(error=>console.error("Erro no sistema offline:",error));});}
+$("taskCategory").addEventListener("change",updateActivitySuggestions);
+$("activitySuggestion").addEventListener("change",()=>{if($("activitySuggestion").value)$("taskName").value=$("activitySuggestion").value;});
+$("taskName").addEventListener("input",()=>{$("activitySuggestion").value="";});
+$("taskName").addEventListener("keydown",e=>{if(e.key==="Enter")addTask();});
+updateActivitySuggestions();renderTasks();
 </script>
 </body>
 </html>
