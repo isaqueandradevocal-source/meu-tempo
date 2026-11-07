@@ -301,6 +301,30 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
  </section>
 
  <section class="panel">
+  <h2>Salvar e reutilizar programações</h2>
+  <p class="note">Monte sua lista com os tempos definidos e salve com o nome do dia. Depois, basta carregar a programação para substituir a lista atual.</p>
+  <div class="field" style="margin-bottom:12px">
+   <label class="field-label" for="scheduleName">Nome da programação</label>
+   <input id="scheduleName" placeholder="Ex.: Quarta-feira" autocomplete="off">
+  </div>
+  <div class="actions" style="margin-bottom:15px">
+   <button type="button" onclick="saveSchedule()">Salvar programação atual</button>
+  </div>
+  <div class="field" style="margin-bottom:12px">
+   <label class="field-label" for="savedSchedules">Programações salvas</label>
+   <select id="savedSchedules"><option value="">Selecione uma programação</option></select>
+  </div>
+  <div class="actions">
+   <button type="button" onclick="loadSchedule()">Carregar e substituir tarefas</button>
+   <button type="button" class="secondary" onclick="exportSchedules()">Exportar programações</button>
+   <button type="button" class="secondary" onclick="document.getElementById('importScheduleFile').click()">Importar arquivo</button>
+   <button type="button" class="danger" onclick="deleteSchedule()">Excluir programação salva</button>
+   <input id="importScheduleFile" type="file" accept=".json,application/json" style="display:none" onchange="importSchedules(event)">
+  </div>
+  <p class="note" id="scheduleStatus" aria-live="polite" style="margin-top:12px">As programações ficam salvas neste dispositivo. Exporte um arquivo para guardar ou transferir para outro aparelho.</p>
+ </section>
+
+ <section class="panel">
   <h2>Configurar pausas</h2>
   <div class="settings">
    <label>Pausa curta (min)<br><input id="shortBreak" type="number" min="0" value="2"></label>
@@ -369,6 +393,7 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
 let tasks=JSON.parse(localStorage.getItem("meuTempoTasks")||"[]");
 let historyEntries=JSON.parse(localStorage.getItem("meuTempoHistory")||"[]");
 let dailyStats=JSON.parse(localStorage.getItem("meuTempoDailyStats")||"{}");
+let savedSchedules=loadSavedSchedules();
 
 let currentIndex=0,remaining=0,totalDuration=0,timer=null,paused=false,inBreak=false,running=false,audioContext=null,deadline=0;
 let taskActiveStartedAt=0,taskElapsedMs=0;
@@ -623,174 +648,118 @@ function renderTasks(){
  $("startButton").disabled=!tasks.length||running;
 }
 
-/* CADASTRO POR VOZ — RECONHECIMENTO NO NAVEGADOR */
-
-function setVoiceStatus(message,type=""){
- const status=$("voiceStatus");
- status.textContent=message;
- status.className="voice-status"+(type?" "+type:"");
-}
-
-function detectVoiceCategory(text){
- const value=text.toLowerCase();
-
- if(/bíblia|jeová|reunião|publicação|oração|texto bíblico|sentinela/.test(value)){
-  return "Espiritualidade";
- }
- if(/pedagogia|estudar|estudo|aula|atividade da faculdade|revisar conteúdo|trabalho da faculdade/.test(value)){
-  return "Estudos";
- }
- if(/theo|mille|família|brincar|bebê|criança/.test(value)){
-  return "Família";
- }
- if(/loja|cliente|venda|produto|relatório|joia|estoque/.test(value)){
-  return "Trabalho";
- }
- if(/caminhar|caminhada|correr|corrida|treino|exercício|alongamento/.test(value)){
-  return "Exercícios";
- }
- if(/planta|quintal|passeio|área externa|folhas/.test(value)){
-  return "Área externa";
- }
- if(/varrer|passar pano|louça|poeira|cama|casa|limpar|lavar|organizar cômodo/.test(value)){
-  return "Casa";
- }
-
- return $("taskCategory").value||"Outros";
-}
-
-function parseVoiceDuration(text){
- let match;
-
- match=text.match(/\b(\d+)\s*(minutos?|mins?|min)\b/i);
- if(match)return Number(match[1]);
-
- match=text.match(/\b(\d+)\s*(horas?|hrs?|h)\b/i);
- if(match)return Number(match[1])*60;
-
- const normalized=text.toLowerCase();
-
- if(/\bmeia hora\b/.test(normalized))return 30;
- if(/\buma hora\b/.test(normalized))return 60;
- if(/\bduas horas\b/.test(normalized))return 120;
- if(/\btrês horas\b|\btres horas\b/.test(normalized))return 180;
- if(/\bquatro horas\b/.test(normalized))return 240;
-
- return null;
-}
-
-function cleanVoiceTaskName(text){
- let name=text.trim();
-
- name=name.replace(/\b(?:durante|por|em)\s+\d+\s*(?:minutos?|mins?|min|horas?|hrs?|h)\b/gi," ");
- name=name.replace(/\b\d+\s*(?:minutos?|mins?|min|horas?|hrs?|h)\b/gi," ");
- name=name.replace(/\b(?:durante|por|em)\s+(?:meia|uma|duas|dois|três|tres|quatro)\s+horas?\b/gi," ");
- name=name.replace(/\b(?:durante|por)\s+meia hora\b/gi," ");
-
- name=name.replace(/^(?:(?:eu\s+)?(?:quero|preciso|vou|gostaria de|desejo)\s+)+/i,"");
- name=name.replace(/^(?:adicionar|cadastrar|registrar|colocar)\s+(?:a\s+)?(?:tarefa|atividade)?\s*/i,"");
- name=name.replace(/^(?:a\s+)?(?:tarefa|atividade)\s+(?:de\s+)?/i,"");
-
- name=name.replace(/\s+/g," ").replace(/^[\s,.-]+|[\s,.-]+$/g,"");
-
- if(name.length){
-  name=name.charAt(0).toUpperCase()+name.slice(1);
- }
-
- return name;
-}
-
-function startVoiceCapture(){
- const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
-
- if(!SpeechRecognition){
-  setVoiceStatus("Este navegador não oferece reconhecimento de voz. Experimente abrir o Meu Tempo no Google Chrome do Android.", "error");
-  return;
- }
-
- const button=$("voiceButton");
- button.disabled=true;
- setVoiceStatus("Ouvindo... fale o nome da atividade e, se possível, a duração.");
-
- const recognition=new SpeechRecognition();
- recognition.lang="pt-BR";
- recognition.interimResults=false;
- recognition.maxAlternatives=1;
-
- recognition.onresult=event=>{
-  const transcript=event.results[0][0].transcript||"";
-  const minutes=parseVoiceDuration(transcript);
-  const name=cleanVoiceTaskName(transcript);
-
-  if(!name){
-   setVoiceStatus("Não consegui identificar o nome da atividade. Tente falar novamente.", "error");
-   return;
-  }
-
-  $("taskCategory").value=detectVoiceCategory(name);
-  updateActivitySuggestions();
-  $("activitySuggestion").value="";
-  $("taskName").value=name;
-
-  if(minutes===null){
-   $("taskMinutes").focus();
-   const answer=prompt("Entendi a atividade: "+name+"\n\nPor quantos minutos você deseja realizá-la?");
-
-   if(answer===null||answer.trim()===""){
-    setVoiceStatus("Atividade reconhecida. Informe a duração em minutos e toque em “Adicionar atividade”.");
-    return;
-   }
-
-   const chosenMinutes=Number(answer);
-
-   if(!Number.isInteger(chosenMinutes)||chosenMinutes<1||chosenMinutes>600){
-    setVoiceStatus("A duração precisa ser um número entre 1 e 600 minutos. A atividade ficou preenchida para você ajustar.", "error");
-    $("taskMinutes").focus();
-    return;
-   }
-
-   $("taskMinutes").value=chosenMinutes;
-   addTask();
-   setVoiceStatus("Atividade cadastrada: "+name+" — "+chosenMinutes+" minutos. O cronômetro ainda não começou.", "success");
-   return;
-  }
-
-  if(!Number.isInteger(minutes)||minutes<1||minutes>600){
-   setVoiceStatus("A duração identificada precisa estar entre 1 e 600 minutos. Confira o tempo antes de adicionar.", "error");
-   $("taskMinutes").focus();
-   return;
-  }
-
-  $("taskMinutes").value=minutes;
-  addTask();
-  setVoiceStatus("Atividade cadastrada: "+name+" — "+minutes+" minutos. O cronômetro ainda não começou.", "success");
- };
-
- recognition.onerror=event=>{
-  if(event.error==="not-allowed"||event.error==="service-not-allowed"){
-   setVoiceStatus("O acesso ao microfone não foi autorizado. Verifique a permissão do navegador.", "error");
-  }else if(event.error==="no-speech"){
-   setVoiceStatus("Não ouvi sua fala. Toque no microfone e tente novamente.", "error");
-  }else if(event.error==="network"){
-   setVoiceStatus("O reconhecimento de voz precisa de conexão com a internet neste navegador. Tente novamente quando estiver conectado.", "error");
-  }else{
-   setVoiceStatus("Não foi possível reconhecer a fala. Tente novamente.", "error");
-  }
- };
-
- recognition.onend=()=>{
-  button.disabled=false;
- };
-
+function loadSavedSchedules(){
  try{
-  recognition.start();
- }catch(error){
-  button.disabled=false;
-  setVoiceStatus("Não foi possível iniciar o microfone. Tente novamente.", "error");
- }
+  const value=JSON.parse(localStorage.getItem("meuTempoSchedules")||"[]");
+  return Array.isArray(value)?value.filter(item=>item&&typeof item.name==="string"&&Array.isArray(item.tasks)):[];
+ }catch(error){return [];}
 }
 
-/* FIM DO CADASTRO POR VOZ */
+function saveSchedulesStorage(){
+ localStorage.setItem("meuTempoSchedules",JSON.stringify(savedSchedules));
+ renderScheduleOptions();
+}
+
+function renderScheduleOptions(){
+ const select=$("savedSchedules");
+ if(!select)return;
+ const selected=select.value;
+ select.innerHTML="";
+ const first=document.createElement("option");
+ first.value="";first.textContent="Selecione uma programação";select.appendChild(first);
+ savedSchedules.forEach((item,index)=>{
+  const option=document.createElement("option");
+  option.value=String(index);
+  option.textContent=item.name+" ("+item.tasks.length+" atividades)";
+  select.appendChild(option);
+ });
+ if(selected!==""&&savedSchedules[Number(selected)])select.value=selected;
+}
+
+function setScheduleStatus(message,type=""){
+ const el=$("scheduleStatus");
+ el.textContent=message;
+ el.style.color=type==="error"?"#b42332":type==="success"?"#18734b":"";
+}
+
+function saveSchedule(){
+ const name=$("scheduleName").value.trim();
+ if(!name){alert("Dê um nome para esta programação, por exemplo: Quarta-feira.");$("scheduleName").focus();return;}
+ if(!tasks.length){alert("Adicione pelo menos uma atividade antes de salvar.");return;}
+ const existing=savedSchedules.findIndex(item=>item.name.toLowerCase()===name.toLowerCase());
+ const schedule={name,tasks:tasks.map(task=>({name:String(task.name),minutes:Number(task.minutes),category:task.category||"Outros",recordHistory:task.recordHistory===true})),breaks:{short:Number($("shortBreak").value)||0,long:Number($("longBreak").value)||0,limit:Number($("breakLimit").value)||15},updatedAt:new Date().toISOString()};
+ if(existing>=0){if(!confirm("Já existe uma programação com esse nome. Deseja atualizar a versão salva?"))return;savedSchedules[existing]=schedule;}
+ else savedSchedules.push(schedule);
+ saveSchedulesStorage();
+ $("savedSchedules").value=String(existing>=0?existing:savedSchedules.length-1);
+ setScheduleStatus("Programação “"+name+"” salva com "+tasks.length+" atividades e seus tempos.","success");
+}
+
+function loadSchedule(){
+ const value=$("savedSchedules").value;
+ if(value===""||!savedSchedules[Number(value)]){alert("Selecione uma programação salva.");return;}
+ const schedule=savedSchedules[Number(value)];
+ if(running){alert("Encerre a execução atual antes de carregar outra programação.");return;}
+ if(!confirm("Carregar “"+schedule.name+"” e substituir todas as tarefas da lista atual?\n\nO histórico de atividades concluídas será preservado."))return;
+ tasks=schedule.tasks.map(task=>({name:String(task.name),minutes:Number(task.minutes),category:task.category||"Outros",recordHistory:task.recordHistory===true}));
+ if(schedule.breaks){$("shortBreak").value=Number(schedule.breaks.short)||0;$("longBreak").value=Number(schedule.breaks.long)||0;$("breakLimit").value=Number(schedule.breaks.limit)||15;}
+ saveTasks();renderTasks();renderHome();
+ setScheduleStatus("Programação “"+schedule.name+"” carregada. A lista anterior foi substituída; o histórico foi mantido.","success");
+}
+
+function exportSchedules(){
+ if(!savedSchedules.length){alert("Você ainda não salvou nenhuma programação.");return;}
+ const data={app:"Meu Tempo",formatVersion:1,exportedAt:new Date().toISOString(),schedules:savedSchedules};
+ const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob);const a=document.createElement("a");
+ a.href=url;a.download="meu-tempo-programacoes.json";document.body.appendChild(a);a.click();a.remove();
+ setTimeout(()=>URL.revokeObjectURL(url),1000);
+ setScheduleStatus("Arquivo de programações exportado. Guarde-o para importar em outro momento.","success");
+}
+
+function importSchedules(event){
+ const file=event.target.files&&event.target.files[0];if(!file)return;
+ const reader=new FileReader();
+ reader.onload=()=>{
+  try{
+   const data=JSON.parse(String(reader.result||""));
+   const incoming=Array.isArray(data)?data:data.schedules;
+   if(!Array.isArray(incoming)||!incoming.length)throw new Error("O arquivo não contém programações válidas.");
+   const valid=incoming.map(item=>{
+    if(!item||typeof item.name!=="string"||!item.name.trim()||!Array.isArray(item.tasks))throw new Error("Uma programação do arquivo está incompleta.");
+    const cleanTasks=item.tasks.map(task=>{
+     const minutes=Number(task.minutes);
+     if(!task||typeof task.name!=="string"||!task.name.trim()||!Number.isInteger(minutes)||minutes<1||minutes>600)throw new Error("Há uma atividade com nome ou duração inválidos no arquivo.");
+     return {name:task.name.trim(),minutes,category:task.category||"Outros",recordHistory:task.recordHistory===true};
+    });
+    return {name:item.name.trim(),tasks:cleanTasks,breaks:item.breaks||{short:2,long:5,limit:15},updatedAt:item.updatedAt||new Date().toISOString()};
+   });
+   if(!confirm("Importar "+valid.length+" programação(ões)? Se houver nomes iguais, as versões salvas serão atualizadas."))return;
+   valid.forEach(item=>{const index=savedSchedules.findIndex(old=>old.name.toLowerCase()===item.name.toLowerCase());if(index>=0)savedSchedules[index]=item;else savedSchedules.push(item);});
+   saveSchedulesStorage();
+   setScheduleStatus(valid.length+" programação(ões) importada(s). Selecione uma e toque em “Carregar e substituir tarefas” para usá-la.","success");
+  }catch(error){setScheduleStatus("Não foi possível importar: "+error.message,"error");alert("Arquivo inválido: "+error.message);}
+  finally{event.target.value="";}
+ };
+ reader.onerror=()=>{setScheduleStatus("Não foi possível ler o arquivo.","error");event.target.value="";};
+ reader.readAsText(file);
+}
+
+function deleteSchedule(){
+ const value=$("savedSchedules").value;
+ if(value===""||!savedSchedules[Number(value)]){alert("Selecione uma programação para excluir.");return;}
+ const schedule=savedSchedules[Number(value)];
+ if(!confirm("Excluir a programação salva “"+schedule.name+"”? As tarefas atuais não serão alteradas."))return;
+ savedSchedules.splice(Number(value),1);saveSchedulesStorage();
+ setScheduleStatus("Programação excluída. A lista atual não foi alterada.","success");
+}
+
+/* CADASTRO POR VOZ */
+function setVoiceStatus(message,type=""){$("voiceStatus").textContent=message;$("voiceStatus").className="voice-status"+(type?" "+type:"");}
+function detectVoiceCategory(text){const value=text.toLowerCase();if(/bíblia|jeová|reunião|publicação|oração|texto bíblico|sentinela/.test(value))return "Espiritualidade";if(/pedagogia|estudar|estudo|aula|atividade da faculdade|revisar conteúdo|trabalho da faculdade/.test(value))return "Estudos";if(/theo|mille|família|brincar|bebê|criança/.test(value))return "Família";if(/loja|cliente|venda|produto|relatório|joia|estoque/.test(value))return "Trabalho";if(/caminhar|caminhada|correr|corrida|treino|exercício|alongamento/.test(value))return "Exercícios";if(/planta|quintal|passeio|área externa|folhas/.test(value))return "Área externa";if(/varrer|passar pano|louça|poeira|cama|casa|limpar|lavar|organizar cômodo/.test(value))return "Casa";return $("taskCategory").value||"Outros";}
+function parseVoiceDuration(text){let m=text.match(/\b(\d+)\s*(minutos?|mins?|min)\b/i);if(m)return Number(m[1]);m=text.match(/\b(\d+)\s*(horas?|hrs?|h)\b/i);if(m)return Number(m[1])*60;const v=text.toLowerCase();const words={"cinco minutos":5,"dez minutos":10,"quinze minutos":15,"vinte minutos":20,"vinte e cinco minutos":25,"trinta minutos":30,"quarenta minutos":40,"quarenta e cinco minutos":45,"cinquenta minutos":50,"meia hora":30,"uma hora":60,"uma hora e meia":90,"duas horas":120,"duas horas e meia":150,"três horas":180,"tres horas":180,"quatro horas":240};for(const [phrase,minutes] of Object.entries(words))if(v.includes(phrase))return minutes;return null;}
+function cleanVoiceTaskName(text){let name=text.trim();name=name.replace(/\b(?:durante|por|em)\s+\d+\s*(?:minutos?|mins?|min|horas?|hrs?|h)\b/gi," ");name=name.replace(/\b\d+\s*(?:minutos?|mins?|min|horas?|hrs?|h)\b/gi," ");name=name.replace(/\b(?:durante|por|em)\s+(?:meia|uma|duas|dois|três|tres|quatro)\s+horas?\b/gi," ");name=name.replace(/\b(?:durante|por)\s+meia hora\b/gi," ");name=name.replace(/\b(?:durante|por)\s+uma hora e meia\b/gi," ");name=name.replace(/^(?:(?:eu\s+)?(?:quero|preciso|vou|gostaria de|desejo)\s+)+/i,"");name=name.replace(/^(?:adicionar|cadastrar|registrar|colocar)\s+(?:a\s+)?(?:tarefa|atividade)?\s*/i,"");name=name.replace(/^(?:a\s+)?(?:tarefa|atividade)\s+(?:de\s+)?/i,"");name=name.replace(/[,.!?]+$/g,"").replace(/\s+/g," ").trim();if(name)name=name.charAt(0).toUpperCase()+name.slice(1);return name;}
+function startVoiceCapture(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){setVoiceStatus("Este navegador não oferece reconhecimento de voz. Use o ditado do teclado ou outro navegador compatível.","error");return;}const button=$("voiceButton");button.disabled=true;setVoiceStatus("Ouvindo... fale o nome da atividade e, se possível, a duração.");const recognition=new SR();recognition.lang="pt-BR";recognition.interimResults=false;recognition.maxAlternatives=1;recognition.onresult=event=>{const transcript=event.results[0][0].transcript||"";const minutes=parseVoiceDuration(transcript);const name=cleanVoiceTaskName(transcript);if(!name){setVoiceStatus("Não consegui identificar o nome da atividade. Tente novamente.","error");return;}$("taskCategory").value=detectVoiceCategory(name);updateActivitySuggestions();$("activitySuggestion").value="";$("taskName").value=name;if(minutes===null){const answer=prompt("Entendi a atividade: "+name+"\n\nPor quantos minutos você deseja realizá-la?");if(answer===null||answer.trim()===""){setVoiceStatus("Atividade reconhecida. Informe a duração e toque em Adicionar atividade.");return;}const chosen=Number(answer);if(!Number.isInteger(chosen)||chosen<1||chosen>600){setVoiceStatus("A duração precisa estar entre 1 e 600 minutos. Ajuste o campo manualmente.","error");$("taskMinutes").focus();return;}$("taskMinutes").value=chosen;addTask();setVoiceStatus("Atividade cadastrada: "+name+" — "+chosen+" minutos. O cronômetro ainda não começou.","success");return;}if(!Number.isInteger(minutes)||minutes<1||minutes>600){setVoiceStatus("A duração identificada precisa estar entre 1 e 600 minutos.","error");return;}$("taskMinutes").value=minutes;addTask();setVoiceStatus("Atividade cadastrada: "+name+" — "+minutes+" minutos. O cronômetro ainda não começou.","success");};recognition.onerror=event=>{if(event.error==="not-allowed"||event.error==="service-not-allowed")setVoiceStatus("O acesso ao microfone não foi autorizado. Verifique a permissão do navegador.","error");else if(event.error==="no-speech")setVoiceStatus("Não ouvi sua fala. Toque no microfone e tente novamente.","error");else if(event.error==="network")setVoiceStatus("O reconhecimento de voz precisa de conexão com a internet neste navegador.","error");else setVoiceStatus("Não foi possível reconhecer a fala. Tente novamente.","error");};recognition.onend=()=>{button.disabled=false;};try{recognition.start();}catch(error){button.disabled=false;setVoiceStatus("Não foi possível iniciar o microfone. Tente novamente.","error");}}
 
 function addTask(){
  const typedName=$("taskName").value.trim();
@@ -1272,6 +1241,7 @@ $("taskName").addEventListener("keydown",e=>{
 });
 
 updateActivitySuggestions();
+renderScheduleOptions();
 renderTasks();
 renderHistory();
 renderHome();
