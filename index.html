@@ -203,6 +203,45 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
 @media(min-width:601px){
  .page-nav{padding-bottom:2px}
 }
+
+/* PAINEL DE CONTROLE DO TEMPO — inspirado no método de Lyubishchev */
+.dashboard-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:14px 0}
+.dash-card{background:#f7f9fd;border:1px solid #e8edf5;border-radius:15px;padding:17px;min-width:0}
+.dash-card small{display:block;color:#77849a;font-size:12px;font-weight:700;margin-bottom:7px}
+.dash-card strong{display:block;color:#1d3152;font-size:clamp(21px,3vw,29px);font-weight:800;letter-spacing:-.6px;overflow-wrap:anywhere}
+.dash-card span{font-size:12px;color:#8792a3}
+.time-form{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:10px}
+.time-form .wide{grid-column:1/-1}
+.time-form button{grid-column:1/-1}
+.time-form input,.time-form select{width:100%}
+.time-chart-wrap{display:grid;grid-template-columns:190px 1fr;gap:22px;align-items:center}
+.time-donut{width:180px;height:180px;border-radius:50%;background:#e8edf5;position:relative;display:grid;place-items:center;margin:auto}
+.time-donut:after{content:"";position:absolute;width:105px;height:105px;border-radius:50%;background:white}
+.time-donut-label{position:absolute;z-index:1;text-align:center;line-height:1.25}
+.time-donut-label strong{display:block;font-size:22px;color:#1d3152}
+.time-donut-label small{font-size:11px;color:#7b8799}
+.category-legend{display:grid;gap:9px}
+.legend-row{display:grid;grid-template-columns:11px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px;color:#526078}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+.legend-row strong{color:#26364e;font-variant-numeric:tabular-nums}
+.time-entry{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #edf0f5}
+.time-entry:last-child{border-bottom:0}
+.time-entry-name{font-weight:700;color:#26364e;overflow-wrap:anywhere}
+.time-entry-meta{font-size:12px;color:#7b8799;margin-top:4px}
+.time-entry-duration{font-weight:800;color:#1d3152;white-space:nowrap}
+.time-entry button{padding:6px 9px;font-size:11px;margin-top:6px}
+.month-filter{max-width:210px}
+.dash-empty{padding:18px;background:#f8fafc;border:1px dashed #d6deea;border-radius:12px;color:#77849a;font-size:13px;line-height:1.5}
+@media(max-width:600px){
+ .dashboard-grid{grid-template-columns:1fr 1fr;gap:8px}
+ .dashboard-grid .dash-card:last-child{grid-column:1/-1}
+ .dash-card{padding:14px}
+ .time-form{grid-template-columns:1fr 1fr}
+ .time-form .wide{grid-column:1/-1}
+ .time-chart-wrap{grid-template-columns:1fr;gap:18px}
+ .time-donut{width:165px;height:165px}
+ .time-donut:after{width:96px;height:96px}
+}
 </style>
 </head>
 <body>
@@ -220,10 +259,47 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
 <section id="homePage">
  <main>
   <section class="home-intro">
-   <h2>Seu tempo, suas escolhas.</h2>
-   <p>Veja como está sua programação e escolha por onde começar. Uma tarefa de cada vez.</p>
+   <h2>Seu tempo em números.</h2>
+   <p>Registre como você usa suas horas. Observe seus hábitos, compare períodos e decida conscientemente onde investir seu tempo.</p>
   </section>
   <section class="panel">
+   <h2>Visão geral</h2>
+   <label class="field-label" for="dashboardMonth">Período de análise</label>
+   <input class="month-filter" id="dashboardMonth" type="month">
+   <div class="dashboard-grid">
+    <div class="dash-card"><small>Tempo registrado no mês</small><strong id="monthTotal">0h</strong><span>Horas acompanhadas</span></div>
+    <div class="dash-card"><small>Registros realizados</small><strong id="monthEntries">0</strong><span>Atividades registradas</span></div>
+    <div class="dash-card"><small>Média por dia registrado</small><strong id="monthAverage">0 min</strong><span>Nos dias com registros</span></div>
+   </div>
+  </section>
+  <section class="panel">
+   <h2>Registrar tempo</h2>
+   <p class="note">As atividades feitas pelo cronômetro serão registradas automaticamente quando você concluir, pular ou encerrar uma tarefa. Use o registro manual apenas para atividades que realizou sem iniciar o cronômetro.</p>
+   <div class="time-form">
+    <div class="field wide"><label class="field-label" for="timeActivity">O que você fez?</label><input id="timeActivity" placeholder="Ex.: Estudar Pedagogia" autocomplete="off"></div>
+    <div class="field"><label class="field-label" for="timeCategory">Categoria</label><select id="timeCategory"><option>Trabalho</option><option>Estudos</option><option>Espiritualidade</option><option>Casa</option><option>Área externa</option><option>Cuidados pessoais</option><option>Exercícios</option><option>Outros</option></select></div>
+    <div class="field"><label class="field-label" for="timeDate">Data</label><input id="timeDate" type="date"></div>
+    <div class="field"><label class="field-label" for="timeStart">Início</label><input id="timeStart" type="time"></div>
+    <div class="field"><label class="field-label" for="timeEnd">Término</label><input id="timeEnd" type="time"></div>
+    <button type="button" onclick="addTimeEntry()">Salvar registro de tempo</button>
+   </div>
+   <p class="note" id="timeEntryStatus" aria-live="polite" style="margin-top:10px">A duração será calculada automaticamente pelos horários informados.</p>
+  </section>
+  <section class="panel">
+   <h2>Como seu tempo foi distribuído</h2>
+   <div class="time-chart-wrap"><div class="time-donut" id="timeDonut"><div class="time-donut-label"><strong id="donutTotal">0h</strong><small>no período</small></div></div><div class="category-legend" id="categoryLegend"><p class="note">Seus registros por categoria aparecerão aqui.</p></div></div>
+  </section>
+  <section class="panel">
+   <h2>Registros do período</h2>
+   <div id="timeEntriesList"></div>
+   <p id="timeEntriesEmpty" class="dash-empty">Ainda não há atividades registradas neste período. Inicie uma tarefa pelo cronômetro ou adicione um registro manual.</p>
+  </section>
+  <section class="panel">
+   <h2>Seu planejamento</h2>
+   <p class="note">O cronômetro e as tarefas continuam disponíveis na programação.</p>
+   <div class="home-actions"><button type="button" onclick="showPage('planner')">Organizar programação</button><button type="button" class="secondary" onclick="beginFromHome()">▶ Começar agora</button></div>
+  </section>
+  <section class="panel" style="display:none">
    <h2>Resumo de hoje</h2>
    <div class="home-stats">
     <div class="home-stat"><small>Tarefas na programação</small><strong id="homePlanned">0</strong></div>
@@ -234,10 +310,6 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
     <button type="button" onclick="showPage('planner')">Organizar programação</button>
     <button type="button" class="secondary" onclick="beginFromHome()">▶ Começar agora</button>
    </div>
-  </section>
-  <section class="panel">
-   <h2>Um passo de cada vez</h2>
-   <p class="note">O Meu Tempo ajuda você a acompanhar sua execução, mas quem decide o que merece sua atenção é você.</p>
   </section>
  </main>
 </section>
@@ -253,7 +325,6 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
      <option value="Casa">Casa</option>
      <option value="Área externa">Área externa</option>
      <option value="Cuidados pessoais">Cuidados pessoais</option>
-     <option value="Família">Família</option>
      <option value="Trabalho">Trabalho</option>
      <option value="Estudos">Estudos</option>
      <option value="Espiritualidade">Espiritualidade</option>
@@ -261,40 +332,28 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
      <option value="Outros">Outros</option>
     </select>
    </div>
-
    <div class="field activity-field">
     <label class="field-label" for="activitySuggestion">Sugestões de atividades</label>
-    <select id="activitySuggestion">
-     <option value="">Escolha uma sugestão (opcional)</option>
-    </select>
+    <select id="activitySuggestion"><option value="">Escolha uma sugestão (opcional)</option></select>
    </div>
-
    <div class="field custom-field wide">
     <label class="field-label" for="taskName">Nome da atividade — escolha uma sugestão ou escreva a sua</label>
     <input id="taskName" class="wide" placeholder="Ex.: Organizar a estante" autocomplete="off">
    </div>
-
    <div class="voice-area">
     <button type="button" class="secondary" id="voiceButton" onclick="startVoiceCapture()">🎙️ Cadastrar atividade por voz</button>
     <p id="voiceStatus" class="voice-status" aria-live="polite">Toque no microfone e diga a atividade e o tempo. Ex.: “Estudar Pedagogia durante 40 minutos”.</p>
    </div>
-
    <div class="field minutes-field">
     <label class="field-label" for="taskMinutes">Duração (minutos)</label>
     <input id="taskMinutes" type="number" min="1" max="600" value="10" aria-label="Minutos" style="width:100%">
    </div>
-
    <div class="field wide">
     <label class="field-label" for="taskHistory">Registrar no histórico?</label>
-    <select id="taskHistory">
-     <option value="nao" selected>Não</option>
-     <option value="sim">Sim</option>
-    </select>
+    <select id="taskHistory"><option value="nao" selected>Não</option><option value="sim">Sim</option></select>
    </div>
-
    <button onclick="addTask()">Adicionar atividade</button>
   </div>
-
   <p class="note">As sugestões são apenas um apoio. Você decide o que fazer e pode escrever qualquer atividade.</p>
   <div id="taskList"></div>
   <p id="emptyMessage" class="note">Nenhuma tarefa adicionada ainda.</p>
@@ -307,9 +366,7 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
    <label class="field-label" for="scheduleName">Nome da programação</label>
    <input id="scheduleName" placeholder="Ex.: Quarta-feira" autocomplete="off">
   </div>
-  <div class="actions" style="margin-bottom:15px">
-   <button type="button" onclick="saveSchedule()">Salvar programação atual</button>
-  </div>
+  <div class="actions" style="margin-bottom:15px"><button type="button" onclick="saveSchedule()">Salvar programação atual</button></div>
   <div class="field" style="margin-bottom:12px">
    <label class="field-label" for="savedSchedules">Programações salvas</label>
    <select id="savedSchedules"><option value="">Selecione uma programação</option></select>
@@ -349,18 +406,10 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
   <section class="panel">
    <h2>Histórico de tarefas concluídas</h2>
    <p class="note">Aqui aparecem somente as tarefas que você escolheu registrar e concluiu até o fim.</p>
-
    <div class="history-summary">
-    <div class="history-stat">
-     <small>Tarefas concluídas</small>
-     <strong id="historyCount">0</strong>
-    </div>
-    <div class="history-stat">
-     <small>Tempo realizado</small>
-     <strong id="historyTotalTime">0 min</strong>
-    </div>
+    <div class="history-stat"><small>Tarefas concluídas</small><strong id="historyCount">0</strong></div>
+    <div class="history-stat"><small>Tempo realizado</small><strong id="historyTotalTime">0 min</strong></div>
    </div>
-
    <div id="historyList"></div>
    <p id="historyEmpty" class="history-empty">Ainda não há tarefas registradas. Ao adicionar uma atividade, escolha “Sim” em “Registrar no histórico?” para acompanhá-la aqui.</p>
   </section>
@@ -394,9 +443,10 @@ let tasks=JSON.parse(localStorage.getItem("meuTempoTasks")||"[]");
 let historyEntries=JSON.parse(localStorage.getItem("meuTempoHistory")||"[]");
 let dailyStats=JSON.parse(localStorage.getItem("meuTempoDailyStats")||"{}");
 let savedSchedules=loadSavedSchedules();
+let timeEntries=loadTimeEntries();
 
 let currentIndex=0,remaining=0,totalDuration=0,timer=null,paused=false,inBreak=false,running=false,audioContext=null,deadline=0;
-let taskActiveStartedAt=0,taskElapsedMs=0;
+let taskActiveStartedAt=0,taskElapsedMs=0,taskStartedAt=0;
 let mediaRecorder=null,recordedChunks=[],recordingStream=null,lastBreakMessage="";
 
 const $=id=>document.getElementById(id);
@@ -435,12 +485,10 @@ function updateActivitySuggestions(){
  const category=$("taskCategory").value;
  const select=$("activitySuggestion");
  select.innerHTML="";
-
  const first=document.createElement("option");
  first.value="";
  first.textContent="Escolha uma sugestão (opcional)";
  select.appendChild(first);
-
  (activityOptions[category]||[]).forEach(activity=>{
   const option=document.createElement("option");
   option.value=activity;
@@ -449,13 +497,8 @@ function updateActivitySuggestions(){
  });
 }
 
-function saveTasks(){
- localStorage.setItem("meuTempoTasks",JSON.stringify(tasks));
-}
-
-function saveHistory(){
- localStorage.setItem("meuTempoHistory",JSON.stringify(historyEntries));
-}
+function saveTasks(){localStorage.setItem("meuTempoTasks",JSON.stringify(tasks));}
+function saveHistory(){localStorage.setItem("meuTempoHistory",JSON.stringify(historyEntries));}
 
 function showPage(page){
  $("homePage").style.display=page==="home"?"block":"none";
@@ -464,7 +507,6 @@ function showPage(page){
  $("homeTab").classList.toggle("active",page==="home");
  $("plannerTab").classList.toggle("active",page==="planner");
  $("historyTab").classList.toggle("active",page==="history");
-
  if(page==="history")renderHistory();
  if(page==="home")renderHome();
 }
@@ -474,174 +516,212 @@ function todayKey(){
  return now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+String(now.getDate()).padStart(2,"0");
 }
 
+function loadTimeEntries(){
+ try{
+  const value=JSON.parse(localStorage.getItem("meuTempoTimeLogs")||"[]");
+  return Array.isArray(value)?value.filter(item=>item&&typeof item.activity==="string"&&Number(item.minutes)>0):[];
+ }catch(error){return [];}
+}
+function saveTimeEntries(){localStorage.setItem("meuTempoTimeLogs",JSON.stringify(timeEntries));}
+function currentMonthKey(){
+ const now=new Date();
+ return now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+}
+function dateKeyForEntry(item){return String(item.date||"").slice(0,7);}
+function formatHours(minutes){
+ const h=Math.floor(minutes/60),m=minutes%60;
+ return h>0?h+"h "+String(m).padStart(2,"0")+"min":m+" min";
+}
+
+function addTimeEntry(){
+ const activity=$("timeActivity").value.trim();
+ const category=$("timeCategory").value;
+ const date=$("timeDate").value;
+ const start=$("timeStart").value;
+ const end=$("timeEnd").value;
+ if(!activity||!date||!start||!end){
+  alert("Preencha a atividade, a data, o horário de início e o término.");
+  return;
+ }
+ const startParts=start.split(":").map(Number),endParts=end.split(":").map(Number);
+ let startMinutes=startParts[0]*60+startParts[1],endMinutes=endParts[0]*60+endParts[1];
+ if(endMinutes<=startMinutes)endMinutes+=24*60;
+ const minutes=endMinutes-startMinutes;
+ if(minutes<=0||minutes>24*60){alert("Confira os horários informados.");return;}
+ timeEntries.push({id:String(Date.now())+"-"+Math.random().toString(36).slice(2,8),activity,category,date,start,end,minutes,createdAt:new Date().toISOString()});
+ saveTimeEntries();
+ $("timeActivity").value="";
+ $("timeEntryStatus").textContent="Registro salvo: "+activity+" — "+formatHours(minutes)+".";
+ $("timeEntryStatus").style.color="#18734b";
+ renderTimeDashboard();
+}
+
+function deleteTimeEntry(id){
+ if(!confirm("Excluir este registro de tempo?"))return;
+ timeEntries=timeEntries.filter(item=>item.id!==id);
+ saveTimeEntries();
+ renderTimeDashboard();
+}
+
+function renderTimeDashboard(){
+ const month=$("dashboardMonth")?.value||currentMonthKey();
+ const entries=timeEntries.filter(item=>dateKeyForEntry(item)===month).sort((a,b)=>(b.date+b.start).localeCompare(a.date+a.start));
+ const total=entries.reduce((sum,item)=>sum+Number(item.minutes||0),0);
+ const days=new Set(entries.map(item=>item.date)).size;
+ $("monthTotal").textContent=formatHours(total);
+ $("monthEntries").textContent=entries.length;
+ $("monthAverage").textContent=days?formatHours(Math.round(total/days)):"0 min";
+ $("donutTotal").textContent=total?formatHours(total):"0h";
+ const totals={};
+ entries.forEach(item=>{const key=item.category||"Outros";totals[key]=(totals[key]||0)+Number(item.minutes||0);});
+ const colors=["#4f8ff7","#65c58a","#f28b54","#f4c95d","#ae91ed","#ee8bb5","#48b8b0","#8795a8"];
+ const cats=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+ let offset=0;
+ const segments=cats.map(([name,value],i)=>{
+  const start=total?offset/total*100:0;
+  offset+=value;
+  const end=total?offset/total*100:0;
+  return colors[i%colors.length]+" "+start+"% "+end+"%";
+ });
+ $("timeDonut").style.background=total?"conic-gradient("+segments.join(",")+")":"#e8edf5";
+ const legend=$("categoryLegend");
+ legend.innerHTML="";
+ if(!cats.length)legend.innerHTML='<p class="note">Seus registros por categoria aparecerão aqui.</p>';
+ cats.forEach(([name,value],i)=>{
+  const row=document.createElement("div");row.className="legend-row";
+  const dot=document.createElement("span");dot.className="legend-dot";dot.style.background=colors[i%colors.length];
+  const label=document.createElement("span");label.textContent=name;
+  const amount=document.createElement("strong");amount.textContent=formatHours(value);
+  row.append(dot,label,amount);legend.appendChild(row);
+ });
+ const list=$("timeEntriesList");list.innerHTML="";
+ $("timeEntriesEmpty").style.display=entries.length?"none":"block";
+ entries.forEach(item=>{
+  const row=document.createElement("article");row.className="time-entry";
+  const left=document.createElement("div");
+  const name=document.createElement("div");name.className="time-entry-name";name.textContent=item.activity;
+  const meta=document.createElement("div");meta.className="time-entry-meta";
+  const date=new Date(item.date+"T12:00:00").toLocaleDateString("pt-BR");
+  meta.textContent=item.category+" · "+date+" · "+item.start+"–"+item.end;
+  const del=document.createElement("button");del.type="button";del.className="danger";del.textContent="Excluir";del.onclick=()=>deleteTimeEntry(item.id);
+  left.append(name,meta,del);
+  const duration=document.createElement("div");duration.className="time-entry-duration";duration.textContent=formatHours(Number(item.minutes));
+  row.append(left,duration);list.appendChild(row);
+ });
+}
+
 function renderHome(){
  const today=dailyStats[todayKey()]||{completed:0,seconds:0};
  $("homePlanned").textContent=tasks.length;
  $("homeCompleted").textContent=Number(today.completed)||0;
  $("homeTime").textContent=formatDuration(Number(today.seconds)||0);
 }
-
-function beginFromHome(){
- showPage("planner");
- startProgram();
-}
+function beginFromHome(){showPage("planner");startProgram();}
 
 function formatDuration(seconds){
  const totalMinutes=Math.floor(Math.max(0,seconds)/60);
- const hours=Math.floor(totalMinutes/60);
- const minutes=totalMinutes%60;
-
- if(hours>0)return hours+"h "+String(minutes).padStart(2,"0")+"min";
- return totalMinutes+" min";
+ const hours=Math.floor(totalMinutes/60),minutes=totalMinutes%60;
+ return hours>0?hours+"h "+String(minutes).padStart(2,"0")+"min":totalMinutes+" min";
 }
-
 function localDateKey(date){
  return date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+String(date.getDate()).padStart(2,"0");
 }
 
 function renderHistory(){
- const list=$("historyList");
- list.innerHTML="";
-
+ const list=$("historyList");list.innerHTML="";
  const sorted=[...historyEntries].sort((a,b)=>new Date(b.completedAt)-new Date(a.completedAt));
-
  $("historyCount").textContent=sorted.length;
-
  const totalSeconds=sorted.reduce((sum,item)=>sum+(Number(item.actualSeconds)||0),0);
  $("historyTotalTime").textContent=formatDuration(totalSeconds);
-
  $("historyEmpty").style.display=sorted.length?"none":"block";
-
  const groups={};
-
  sorted.forEach(entry=>{
-  const date=new Date(entry.completedAt);
-  const key=localDateKey(date);
-
+  const key=localDateKey(new Date(entry.completedAt));
   if(!groups[key])groups[key]=[];
   groups[key].push(entry);
  });
-
  Object.keys(groups).sort((a,b)=>b.localeCompare(a)).forEach(key=>{
   const date=new Date(key+"T12:00:00");
-
   const heading=document.createElement("h3");
   heading.className="history-date";
-  heading.textContent=date.toLocaleDateString("pt-BR",{
-   weekday:"long",
-   day:"2-digit",
-   month:"long",
-   year:"numeric"
-  });
+  heading.textContent=date.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
   list.appendChild(heading);
-
   groups[key].forEach(entry=>{
-   const card=document.createElement("article");
-   card.className="history-entry";
-
-   const title=document.createElement("div");
-   title.className="history-entry-title";
-   title.textContent=entry.name||"Atividade";
-
-   const meta=document.createElement("div");
-   meta.className="history-meta";
-
-   const completedDate=new Date(entry.completedAt);
-   const time=completedDate.toLocaleTimeString("pt-BR",{
-    hour:"2-digit",
-    minute:"2-digit"
-   });
-
+   const card=document.createElement("article");card.className="history-entry";
+   const title=document.createElement("div");title.className="history-entry-title";title.textContent=entry.name||"Atividade";
+   const meta=document.createElement("div");meta.className="history-meta";
+   const time=new Date(entry.completedAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
    meta.textContent=(entry.category?entry.category+" · ":"")+"Concluída às "+time;
-
-   const times=document.createElement("div");
-   times.className="history-times";
-
-   const planned=document.createElement("span");
-   planned.textContent="Planejado: "+formatDuration(Number(entry.plannedSeconds)||0);
-
-   const actual=document.createElement("span");
-   actual.textContent="Realizado: "+formatDuration(Number(entry.actualSeconds)||0);
-
-   times.append(planned,actual);
-   card.append(title,meta,times);
-   list.appendChild(card);
+   const times=document.createElement("div");times.className="history-times";
+   const planned=document.createElement("span");planned.textContent="Planejado: "+formatDuration(Number(entry.plannedSeconds)||0);
+   const actual=document.createElement("span");actual.textContent="Realizado: "+formatDuration(Number(entry.actualSeconds)||0);
+   times.append(planned,actual);card.append(title,meta,times);list.appendChild(card);
   });
  });
+}
+
+function saveCurrentTaskTime(){
+ const task=tasks[currentIndex];
+ if(!task||!taskStartedAt)return 0;
+ const endedAt=new Date();
+ const activeMs=taskElapsedMs+(taskActiveStartedAt?Date.now()-taskActiveStartedAt:0);
+ const actualSeconds=Math.max(0,Math.round(activeMs/1000));
+ if(actualSeconds>0){
+  const startedAt=new Date(taskStartedAt);
+  const pad=value=>String(value).padStart(2,"0");
+  const date=startedAt.getFullYear()+"-"+pad(startedAt.getMonth()+1)+"-"+pad(startedAt.getDate());
+  const start=pad(startedAt.getHours())+":"+pad(startedAt.getMinutes());
+  const end=pad(endedAt.getHours())+":"+pad(endedAt.getMinutes());
+  timeEntries.push({
+   id:String(Date.now())+"-"+Math.random().toString(36).slice(2,8),
+   activity:task.name,category:task.category||"Outros",date,start,end,
+   minutes:Math.max(1,Math.round(actualSeconds/60)),seconds:actualSeconds,
+   startedAt:startedAt.toISOString(),endedAt:endedAt.toISOString(),
+   source:"cronometro",createdAt:endedAt.toISOString()
+  });
+  saveTimeEntries();
+  renderTimeDashboard();
+ }
+ taskStartedAt=0;taskActiveStartedAt=0;taskElapsedMs=0;
+ renderHome();
+ return actualSeconds;
 }
 
 function recordCompletedTask(){
  const task=tasks[currentIndex];
  if(!task)return;
-
  const activeMs=taskElapsedMs+(taskActiveStartedAt?Date.now()-taskActiveStartedAt:0);
  const actualSeconds=Math.max(0,Math.round(activeMs/1000));
+ saveCurrentTaskTime();
  const key=todayKey();
  if(!dailyStats[key])dailyStats[key]={completed:0,seconds:0};
  dailyStats[key].completed++;
  dailyStats[key].seconds+=actualSeconds;
  localStorage.setItem("meuTempoDailyStats",JSON.stringify(dailyStats));
-
  if(task.recordHistory===true){
   historyEntries.push({
    id:String(Date.now())+"-"+String(Math.random()).slice(2,8),
-   name:task.name,
-   category:task.category||"",
-   plannedSeconds:Number(task.minutes)*60,
-   actualSeconds,
+   name:task.name,category:task.category||"",
+   plannedSeconds:Number(task.minutes)*60,actualSeconds,
    completedAt:new Date().toISOString()
   });
   saveHistory();
  }
-
- taskActiveStartedAt=0;
- taskElapsedMs=0;
- renderHome();
 }
 
 function renderTasks(){
  $("taskList").innerHTML="";
  $("emptyMessage").style.display=tasks.length?"none":"block";
-
  tasks.forEach((task,index)=>{
-  const item=document.createElement("div");
-  item.className="task";
-
-  const name=document.createElement("div");
-  name.className="taskname";
-  name.textContent=task.name;
-
-  const duration=document.createElement("small");
-  duration.textContent=task.minutes+" min";
-
-  const up=document.createElement("button");
-  up.className="secondary";
-  up.textContent="↑";
-  up.title="Mover para cima";
-  up.disabled=index===0;
-  up.onclick=()=>moveTask(index,-1);
-
-  const down=document.createElement("button");
-  down.className="secondary";
-  down.textContent="↓";
-  down.title="Mover para baixo";
-  down.disabled=index===tasks.length-1;
-  down.onclick=()=>moveTask(index,1);
-
-  const edit=document.createElement("button");
-  edit.className="secondary";
-  edit.textContent="Editar";
-  edit.onclick=()=>editTask(index);
-
-  const del=document.createElement("button");
-  del.className="danger";
-  del.textContent="Excluir";
-  del.onclick=()=>deleteTask(index);
-
-  item.append(name,duration,up,down,edit,del);
-  $("taskList").appendChild(item);
+  const item=document.createElement("div");item.className="task";
+  const name=document.createElement("div");name.className="taskname";name.textContent=task.name;
+  const duration=document.createElement("small");duration.textContent=task.minutes+" min";
+  const up=document.createElement("button");up.className="secondary";up.textContent="↑";up.title="Mover para cima";up.disabled=index===0;up.onclick=()=>moveTask(index,-1);
+  const down=document.createElement("button");down.className="secondary";down.textContent="↓";down.title="Mover para baixo";down.disabled=index===tasks.length-1;down.onclick=()=>moveTask(index,1);
+  const edit=document.createElement("button");edit.className="secondary";edit.textContent="Editar";edit.onclick=()=>editTask(index);
+  const del=document.createElement("button");del.className="danger";del.textContent="Excluir";del.onclick=()=>deleteTask(index);
+  item.append(name,duration,up,down,edit,del);$("taskList").appendChild(item);
  });
-
  $("startButton").disabled=!tasks.length||running;
 }
 
@@ -651,34 +731,20 @@ function loadSavedSchedules(){
   return Array.isArray(value)?value.filter(item=>item&&typeof item.name==="string"&&Array.isArray(item.tasks)):[];
  }catch(error){return [];}
 }
-
-function saveSchedulesStorage(){
- localStorage.setItem("meuTempoSchedules",JSON.stringify(savedSchedules));
- renderScheduleOptions();
-}
-
+function saveSchedulesStorage(){localStorage.setItem("meuTempoSchedules",JSON.stringify(savedSchedules));renderScheduleOptions();}
 function renderScheduleOptions(){
- const select=$("savedSchedules");
- if(!select)return;
- const selected=select.value;
- select.innerHTML="";
- const first=document.createElement("option");
- first.value="";first.textContent="Selecione uma programação";select.appendChild(first);
+ const select=$("savedSchedules");if(!select)return;
+ const selected=select.value;select.innerHTML="";
+ const first=document.createElement("option");first.value="";first.textContent="Selecione uma programação";select.appendChild(first);
  savedSchedules.forEach((item,index)=>{
-  const option=document.createElement("option");
-  option.value=String(index);
-  option.textContent=item.name+" ("+item.tasks.length+" atividades)";
-  select.appendChild(option);
+  const option=document.createElement("option");option.value=String(index);option.textContent=item.name+" ("+item.tasks.length+" atividades)";select.appendChild(option);
  });
  if(selected!==""&&savedSchedules[Number(selected)])select.value=selected;
 }
-
 function setScheduleStatus(message,type=""){
- const el=$("scheduleStatus");
- el.textContent=message;
+ const el=$("scheduleStatus");el.textContent=message;
  el.style.color=type==="error"?"#b42332":type==="success"?"#18734b":"";
 }
-
 function saveSchedule(){
  const name=$("scheduleName").value.trim();
  if(!name){alert("Dê um nome para esta programação, por exemplo: Quarta-feira.");$("scheduleName").focus();return;}
@@ -687,11 +753,9 @@ function saveSchedule(){
  const schedule={name,tasks:tasks.map(task=>({name:String(task.name),minutes:Number(task.minutes),category:task.category||"Outros",recordHistory:task.recordHistory===true})),breaks:{short:Number($("shortBreak").value)||0,long:Number($("longBreak").value)||0,limit:Number($("breakLimit").value)||15},updatedAt:new Date().toISOString()};
  if(existing>=0){if(!confirm("Já existe uma programação com esse nome. Deseja atualizar a versão salva?"))return;savedSchedules[existing]=schedule;}
  else savedSchedules.push(schedule);
- saveSchedulesStorage();
- $("savedSchedules").value=String(existing>=0?existing:savedSchedules.length-1);
+ saveSchedulesStorage();$("savedSchedules").value=String(existing>=0?existing:savedSchedules.length-1);
  setScheduleStatus("Programação “"+name+"” salva com "+tasks.length+" atividades e seus tempos.","success");
 }
-
 function loadSchedule(){
  const value=$("savedSchedules").value;
  if(value===""||!savedSchedules[Number(value)]){alert("Selecione uma programação salva.");return;}
@@ -703,7 +767,6 @@ function loadSchedule(){
  saveTasks();renderTasks();renderHome();
  setScheduleStatus("Programação “"+schedule.name+"” carregada. A lista anterior foi substituída; o histórico foi mantido.","success");
 }
-
 function exportSchedules(){
  if(!savedSchedules.length){alert("Você ainda não salvou nenhuma programação.");return;}
  const data={app:"Meu Tempo",formatVersion:1,exportedAt:new Date().toISOString(),schedules:savedSchedules};
@@ -713,7 +776,6 @@ function exportSchedules(){
  setTimeout(()=>URL.revokeObjectURL(url),1000);
  setScheduleStatus("Arquivo de programações exportado. Guarde-o para importar em outro momento.","success");
 }
-
 function importSchedules(event){
  const file=event.target.files&&event.target.files[0];if(!file)return;
  const reader=new FileReader();
@@ -732,7 +794,10 @@ function importSchedules(event){
     return {name:item.name.trim(),tasks:cleanTasks,breaks:item.breaks||{short:2,long:5,limit:15},updatedAt:item.updatedAt||new Date().toISOString()};
    });
    if(!confirm("Importar "+valid.length+" programação(ões)? Se houver nomes iguais, as versões salvas serão atualizadas."))return;
-   valid.forEach(item=>{const index=savedSchedules.findIndex(old=>old.name.toLowerCase()===item.name.toLowerCase());if(index>=0)savedSchedules[index]=item;else savedSchedules.push(item);});
+   valid.forEach(item=>{
+    const index=savedSchedules.findIndex(old=>old.name.toLowerCase()===item.name.toLowerCase());
+    if(index>=0)savedSchedules[index]=item;else savedSchedules.push(item);
+   });
    saveSchedulesStorage();
    setScheduleStatus(valid.length+" programação(ões) importada(s). Selecione uma e toque em “Carregar e substituir tarefas” para usá-la.","success");
   }catch(error){setScheduleStatus("Não foi possível importar: "+error.message,"error");alert("Arquivo inválido: "+error.message);}
@@ -741,7 +806,6 @@ function importSchedules(event){
  reader.onerror=()=>{setScheduleStatus("Não foi possível ler o arquivo.","error");event.target.value="";};
  reader.readAsText(file);
 }
-
 function deleteSchedule(){
  const value=$("savedSchedules").value;
  if(value===""||!savedSchedules[Number(value)]){alert("Selecione uma programação para excluir.");return;}
@@ -753,10 +817,72 @@ function deleteSchedule(){
 
 /* CADASTRO POR VOZ */
 function setVoiceStatus(message,type=""){$("voiceStatus").textContent=message;$("voiceStatus").className="voice-status"+(type?" "+type:"");}
-function detectVoiceCategory(text){const value=text.toLowerCase();if(/bíblia|jeová|reunião|publicação|oração|texto bíblico|sentinela/.test(value))return "Espiritualidade";if(/pedagogia|estudar|estudo|aula|atividade da faculdade|revisar conteúdo|trabalho da faculdade/.test(value))return "Estudos";if(/theo|mille|família|brincar|bebê|criança/.test(value))return "Família";if(/loja|cliente|venda|produto|relatório|joia|estoque/.test(value))return "Trabalho";if(/caminhar|caminhada|correr|corrida|treino|exercício|alongamento/.test(value))return "Exercícios";if(/planta|quintal|passeio|área externa|folhas/.test(value))return "Área externa";if(/varrer|passar pano|louça|poeira|cama|casa|limpar|lavar|organizar cômodo/.test(value))return "Casa";return $("taskCategory").value||"Outros";}
-function parseVoiceDuration(text){let m=text.match(/\b(\d+)\s*(minutos?|mins?|min)\b/i);if(m)return Number(m[1]);m=text.match(/\b(\d+)\s*(horas?|hrs?|h)\b/i);if(m)return Number(m[1])*60;const v=text.toLowerCase();const words={"cinco minutos":5,"dez minutos":10,"quinze minutos":15,"vinte minutos":20,"vinte e cinco minutos":25,"trinta minutos":30,"quarenta minutos":40,"quarenta e cinco minutos":45,"cinquenta minutos":50,"meia hora":30,"uma hora":60,"uma hora e meia":90,"duas horas":120,"duas horas e meia":150,"três horas":180,"tres horas":180,"quatro horas":240};for(const [phrase,minutes] of Object.entries(words))if(v.includes(phrase))return minutes;return null;}
-function cleanVoiceTaskName(text){let name=text.trim();name=name.replace(/\b(?:durante|por|em)\s+\d+\s*(?:minutos?|mins?|min|horas?|hrs?|h)\b/gi," ");name=name.replace(/\b\d+\s*(?:minutos?|mins?|min|horas?|hrs?|h)\b/gi," ");name=name.replace(/\b(?:durante|por|em)\s+(?:meia|uma|duas|dois|três|tres|quatro)\s+horas?\b/gi," ");name=name.replace(/\b(?:durante|por)\s+meia hora\b/gi," ");name=name.replace(/\b(?:durante|por)\s+uma hora e meia\b/gi," ");name=name.replace(/^(?:(?:eu\s+)?(?:quero|preciso|vou|gostaria de|desejo)\s+)+/i,"");name=name.replace(/^(?:adicionar|cadastrar|registrar|colocar)\s+(?:a\s+)?(?:tarefa|atividade)?\s*/i,"");name=name.replace(/^(?:a\s+)?(?:tarefa|atividade)\s+(?:de\s+)?/i,"");name=name.replace(/[,.!?]+$/g,"").replace(/\s+/g," ").trim();if(name)name=name.charAt(0).toUpperCase()+name.slice(1);return name;}
-function startVoiceCapture(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){setVoiceStatus("Este navegador não oferece reconhecimento de voz. Use o ditado do teclado ou outro navegador compatível.","error");return;}const button=$("voiceButton");button.disabled=true;setVoiceStatus("Ouvindo... fale o nome da atividade e, se possível, a duração.");const recognition=new SR();recognition.lang="pt-BR";recognition.interimResults=false;recognition.maxAlternatives=1;recognition.onresult=event=>{const transcript=event.results[0][0].transcript||"";const minutes=parseVoiceDuration(transcript);const name=cleanVoiceTaskName(transcript);if(!name){setVoiceStatus("Não consegui identificar o nome da atividade. Tente novamente.","error");return;}$("taskCategory").value=detectVoiceCategory(name);updateActivitySuggestions();$("activitySuggestion").value="";$("taskName").value=name;if(minutes===null){const answer=prompt("Entendi a atividade: "+name+"\n\nPor quantos minutos você deseja realizá-la?");if(answer===null||answer.trim()===""){setVoiceStatus("Atividade reconhecida. Informe a duração e toque em Adicionar atividade.");return;}const chosen=Number(answer);if(!Number.isInteger(chosen)||chosen<1||chosen>600){setVoiceStatus("A duração precisa estar entre 1 e 600 minutos. Ajuste o campo manualmente.","error");$("taskMinutes").focus();return;}$("taskMinutes").value=chosen;addTask();setVoiceStatus("Atividade cadastrada: "+name+" — "+chosen+" minutos. O cronômetro ainda não começou.","success");return;}if(!Number.isInteger(minutes)||minutes<1||minutes>600){setVoiceStatus("A duração identificada precisa estar entre 1 e 600 minutos.","error");return;}$("taskMinutes").value=minutes;addTask();setVoiceStatus("Atividade cadastrada: "+name+" — "+minutes+" minutos. O cronômetro ainda não começou.","success");};recognition.onerror=event=>{if(event.error==="not-allowed"||event.error==="service-not-allowed")setVoiceStatus("O acesso ao microfone não foi autorizado. Verifique a permissão do navegador.","error");else if(event.error==="no-speech")setVoiceStatus("Não ouvi sua fala. Toque no microfone e tente novamente.","error");else if(event.error==="network")setVoiceStatus("O reconhecimento de voz precisa de conexão com a internet neste navegador.","error");else setVoiceStatus("Não foi possível reconhecer a fala. Tente novamente.","error");};recognition.onend=()=>{button.disabled=false;};try{recognition.start();}catch(error){button.disabled=false;setVoiceStatus("Não foi possível iniciar o microfone. Tente novamente.","error");}}
+function detectVoiceCategory(text){
+ const value=text.toLowerCase();
+ if(/bíblia|jeová|reunião|publicação|oração|texto bíblico|sentinela/.test(value))return "Espiritualidade";
+ if(/pedagogia|estudar|estudo|aula|atividade da faculdade|revisar conteúdo|trabalho da faculdade/.test(value))return "Estudos";
+ if(/loja|cliente|venda|produto|relatório|joia|estoque/.test(value))return "Trabalho";
+ if(/caminhar|caminhada|correr|corrida|treino|exercício|alongamento/.test(value))return "Exercícios";
+ if(/planta|quintal|passeio|área externa|folhas/.test(value))return "Área externa";
+ if(/varrer|passar pano|louça|poeira|cama|casa|limpar|lavar|organizar cômodo/.test(value))return "Casa";
+ return $("taskCategory").value||"Outros";
+}
+function parseVoiceDuration(text){
+ let m=text.match(/\b(\d+)\s*(minutos?|mins?|min)\b/i);if(m)return Number(m[1]);
+ m=text.match(/\b(\d+)\s*(horas?|hrs?|h)\b/i);if(m)return Number(m[1])*60;
+ const v=text.toLowerCase();
+ const words={"cinco minutos":5,"dez minutos":10,"quinze minutos":15,"vinte minutos":20,"vinte e cinco minutos":25,"trinta minutos":30,"quarenta minutos":40,"quarenta e cinco minutos":45,"cinquenta minutos":50,"meia hora":30,"uma hora":60,"uma hora e meia":90,"duas horas":120,"duas horas e meia":150,"três horas":180,"tres horas":180,"quatro horas":240};
+ for(const [phrase,minutes] of Object.entries(words))if(v.includes(phrase))return minutes;
+ return null;
+}
+function cleanVoiceTaskName(text){
+ let name=text.trim();
+ name=name.replace(/\b(?:durante|por|em)\s+\d+\s*(?:minutos?|mins?|min|horas?|hrs?|h)\b/gi," ");
+ name=name.replace(/\b\d+\s*(?:minutos?|mins?|min|horas?|hrs?|h)\b/gi," ");
+ name=name.replace(/\b(?:durante|por|em)\s+(?:meia|uma|duas|dois|três|tres|quatro)\s+horas?\b/gi," ");
+ name=name.replace(/\b(?:durante|por)\s+meia hora\b/gi," ");
+ name=name.replace(/\b(?:durante|por)\s+uma hora e meia\b/gi," ");
+ name=name.replace(/^(?:(?:eu\s+)?(?:quero|preciso|vou|gostaria de|desejo)\s+)+/i,"");
+ name=name.replace(/^(?:adicionar|cadastrar|registrar|colocar)\s+(?:a\s+)?(?:tarefa|atividade)?\s*/i,"");
+ name=name.replace(/^(?:a\s+)?(?:tarefa|atividade)\s+(?:de\s+)?/i,"");
+ name=name.replace(/[,.!?]+$/g,"").replace(/\s+/g," ").trim();
+ if(name)name=name.charAt(0).toUpperCase()+name.slice(1);
+ return name;
+}
+function startVoiceCapture(){
+ const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+ if(!SR){setVoiceStatus("Este navegador não oferece reconhecimento de voz. Use o ditado do teclado ou outro navegador compatível.","error");return;}
+ const button=$("voiceButton");button.disabled=true;
+ setVoiceStatus("Ouvindo... fale o nome da atividade e, se possível, a duração.");
+ const recognition=new SR();recognition.lang="pt-BR";recognition.interimResults=false;recognition.maxAlternatives=1;
+ recognition.onresult=event=>{
+  const transcript=event.results[0][0].transcript||"";
+  const minutes=parseVoiceDuration(transcript);
+  const name=cleanVoiceTaskName(transcript);
+  if(!name){setVoiceStatus("Não consegui identificar o nome da atividade. Tente novamente.","error");return;}
+  $("taskCategory").value=detectVoiceCategory(name);updateActivitySuggestions();
+  $("activitySuggestion").value="";$("taskName").value=name;
+  if(minutes===null){
+   const answer=prompt("Entendi a atividade: "+name+"\n\nPor quantos minutos você deseja realizá-la?");
+   if(answer===null||answer.trim()===""){setVoiceStatus("Atividade reconhecida. Informe a duração e toque em Adicionar atividade.");return;}
+   const chosen=Number(answer);
+   if(!Number.isInteger(chosen)||chosen<1||chosen>600){setVoiceStatus("A duração precisa estar entre 1 e 600 minutos. Ajuste o campo manualmente.","error");$("taskMinutes").focus();return;}
+   $("taskMinutes").value=chosen;addTask();
+   setVoiceStatus("Atividade cadastrada: "+name+" — "+chosen+" minutos. O cronômetro ainda não começou.","success");return;
+  }
+  if(!Number.isInteger(minutes)||minutes<1||minutes>600){setVoiceStatus("A duração identificada precisa estar entre 1 e 600 minutos.","error");return;}
+  $("taskMinutes").value=minutes;addTask();
+  setVoiceStatus("Atividade cadastrada: "+name+" — "+minutes+" minutos. O cronômetro ainda não começou.","success");
+ };
+ recognition.onerror=event=>{
+  if(event.error==="not-allowed"||event.error==="service-not-allowed")setVoiceStatus("O acesso ao microfone não foi autorizado. Verifique a permissão do navegador.","error");
+  else if(event.error==="no-speech")setVoiceStatus("Não ouvi sua fala. Toque no microfone e tente novamente.","error");
+  else if(event.error==="network")setVoiceStatus("O reconhecimento de voz precisa de conexão com a internet neste navegador.","error");
+  else setVoiceStatus("Não foi possível reconhecer a fala. Tente novamente.","error");
+ };
+ recognition.onend=()=>{button.disabled=false;};
+ try{recognition.start();}catch(error){button.disabled=false;setVoiceStatus("Não foi possível iniciar o microfone. Tente novamente.","error");}
+}
 
 function addTask(){
  const typedName=$("taskName").value.trim();
@@ -764,455 +890,186 @@ function addTask(){
  const name=typedName||suggested;
  const category=$("taskCategory").value;
  const minutes=Number($("taskMinutes").value);
-
- if(!name){
-  alert("Escolha uma sugestão ou escreva o nome da atividade.");
-  $("taskName").focus();
-  return;
- }
-
- if(!Number.isInteger(minutes)||minutes<1||minutes>600){
-  alert("Informe uma duração entre 1 e 600 minutos.");
-  return;
- }
-
- tasks.push({
-  name,
-  minutes,
-  category,
-  recordHistory:$("taskHistory").value==="sim"
- });
-
- $("taskName").value="";
- $("activitySuggestion").value="";
- $("taskHistory").value="nao";
-
- saveTasks();
- renderTasks();
- renderHome();
- $("taskName").focus();
+ if(!name){alert("Escolha uma sugestão ou escreva o nome da atividade.");$("taskName").focus();return;}
+ if(!Number.isInteger(minutes)||minutes<1||minutes>600){alert("Informe uma duração entre 1 e 600 minutos.");return;}
+ tasks.push({name,minutes,category,recordHistory:$("taskHistory").value==="sim"});
+ $("taskName").value="";$("activitySuggestion").value="";$("taskHistory").value="nao";
+ saveTasks();renderTasks();renderHome();$("taskName").focus();
 }
-
 function moveTask(index,direction){
- const target=index+direction;
-
- if(target<0||target>=tasks.length)return;
-
+ const target=index+direction;if(target<0||target>=tasks.length)return;
  [tasks[index],tasks[target]]=[tasks[target],tasks[index]];
-
- saveTasks();
- renderTasks();
- renderHome();
+ saveTasks();renderTasks();renderHome();
 }
-
 function editTask(index){
- const task=tasks[index];
- const name=prompt("Nome da atividade:",task.name);
-
+ const task=tasks[index];const name=prompt("Nome da atividade:",task.name);
  if(name===null)return;
-
  const minutes=prompt("Duração em minutos:",task.minutes);
-
  if(minutes===null)return;
-
  const n=Number(minutes);
-
- if(!name.trim()||!Number.isInteger(n)||n<1||n>600){
-  alert("Nome ou duração inválidos.");
-  return;
- }
-
+ if(!name.trim()||!Number.isInteger(n)||n<1||n>600){alert("Nome ou duração inválidos.");return;}
  const recordHistory=confirm("Registrar esta atividade no histórico?\n\nOK = Sim\nCancelar = Não");
-
- tasks[index]={
-  ...task,
-  name:name.trim(),
-  minutes:n,
-  recordHistory
- };
-
- saveTasks();
- renderTasks();
+ tasks[index]={...task,name:name.trim(),minutes:n,recordHistory};
+ saveTasks();renderTasks();
 }
-
 function deleteTask(index){
  if(!confirm("Excluir esta atividade?"))return;
-
- tasks.splice(index,1);
- saveTasks();
- renderTasks();
- renderHome();
+ tasks.splice(index,1);saveTasks();renderTasks();renderHome();
 }
-
 function clearTasks(){
  if(!tasks.length)return;
  if(!confirm("Apagar todas as tarefas?"))return;
-
- tasks=[];
- saveTasks();
- renderTasks();
- renderHome();
+ tasks=[];saveTasks();renderTasks();renderHome();
 }
 
 function getBreak(task){
  const limit=Math.max(1,Number($("breakLimit").value)||15);
  const short=Math.max(0,Number($("shortBreak").value)||0);
  const long=Math.max(0,Number($("longBreak").value)||0);
-
  return task.minutes<limit?short:long;
 }
-
 function getBreakMessage(){
  let options=breakMessages.filter(message=>message!==lastBreakMessage);
-
  if(!options.length)options=breakMessages;
-
  const message=options[Math.floor(Math.random()*options.length)];
- lastBreakMessage=message;
-
- return message;
+ lastBreakMessage=message;return message;
 }
-
 async function startProgram(){
  if(!tasks.length)return;
-
  if(!confirm("Preparado para começar sua programação?"))return;
-
- currentIndex=0;
- running=true;
- paused=false;
- inBreak=false;
-
- $("execution").classList.add("active");
- $("startButton").disabled=true;
-
+ currentIndex=0;running=true;paused=false;inBreak=false;
+ $("execution").classList.add("active");$("startButton").disabled=true;
  try{
-  if(!document.fullscreenElement&&$("execution").requestFullscreen){
-   await $("execution").requestFullscreen();
-  }
- }catch(error){
-  console.log("Tela cheia não disponível:",error);
- }
-
+  if(!document.fullscreenElement&&$("execution").requestFullscreen)await $("execution").requestFullscreen();
+ }catch(error){console.log("Tela cheia não disponível:",error);}
  startTask();
 }
-
 function startTask(){
- if(currentIndex>=tasks.length){
-  finishProgram(true);
-  return;
- }
-
- inBreak=false;
- taskElapsedMs=0;
- taskActiveStartedAt=Date.now();
-
- $("execution").classList.remove("break-mode");
- $("breakMessage").style.display="none";
-
- remaining=tasks[currentIndex].minutes*60;
- totalDuration=remaining;
-
+ if(currentIndex>=tasks.length){finishProgram(true);return;}
+ inBreak=false;taskElapsedMs=0;taskStartedAt=Date.now();taskActiveStartedAt=taskStartedAt;
+ $("execution").classList.remove("break-mode");$("breakMessage").style.display="none";
+ remaining=tasks[currentIndex].minutes*60;totalDuration=remaining;
  $("execTag").textContent="TAREFA "+(currentIndex+1)+" DE "+tasks.length;
  $("execName").textContent=tasks[currentIndex].name;
  $("status").textContent="Concentre-se nesta tarefa.";
- $("pauseButton").textContent="Pausar";
-
- paused=false;
-
- updateClock();
- beginTimer();
+ $("pauseButton").textContent="Pausar";paused=false;
+ updateClock();beginTimer();
 }
-
 function startBreak(){
  taskActiveStartedAt=0;
-
- const duration=getBreak(tasks[currentIndex]);
- currentIndex++;
-
- if(currentIndex>=tasks.length){
-  finishProgram(true);
-  return;
- }
-
- if(duration<=0){
-  startTask();
-  return;
- }
-
- inBreak=true;
-
- $("execution").classList.add("break-mode");
-
- remaining=duration*60;
- totalDuration=remaining;
-
- $("execTag").textContent="INTERVALO";
- $("execName").textContent="Hora de respirar";
- $("breakMessage").textContent=getBreakMessage();
- $("breakMessage").style.display="block";
+ const duration=getBreak(tasks[currentIndex]);currentIndex++;
+ if(currentIndex>=tasks.length){finishProgram(true);return;}
+ if(duration<=0){startTask();return;}
+ inBreak=true;$("execution").classList.add("break-mode");
+ remaining=duration*60;totalDuration=remaining;
+ $("execTag").textContent="INTERVALO";$("execName").textContent="Hora de respirar";
+ $("breakMessage").textContent=getBreakMessage();$("breakMessage").style.display="block";
  $("status").textContent="Descanse. A próxima tarefa virá em seguida.";
- $("pauseButton").textContent="Pausar";
-
- paused=false;
-
- updateClock();
- beginTimer();
+ $("pauseButton").textContent="Pausar";paused=false;
+ updateClock();beginTimer();
 }
-
 function beginTimer(){
- clearInterval(timer);
-
- deadline=Date.now()+remaining*1000;
-
+ clearInterval(timer);deadline=Date.now()+remaining*1000;
  timer=setInterval(()=>{
   if(paused)return;
-
-  remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
-
-  updateClock();
-
+  remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));updateClock();
   if(remaining<=0){
    clearInterval(timer);
-
-   if(inBreak){
-    playSound();
-    startTask();
-   }else{
-    recordCompletedTask();
-
-    if(currentIndex<tasks.length-1)playSound();
-
-    startBreak();
-   }
+   if(inBreak){playSound();startTask();}
+   else{recordCompletedTask();if(currentIndex<tasks.length-1)playSound();startBreak();}
   }
  },250);
 }
-
 function updateClock(){
- const m=Math.floor(remaining/60);
- const s=remaining%60;
-
+ const m=Math.floor(remaining/60),s=remaining%60;
  $("clock").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
-
- $("progress").textContent=inBreak
-  ?"Intervalo entre tarefas"
-  :"Tarefa "+(currentIndex+1)+" de "+tasks.length;
-
+ $("progress").textContent=inBreak?"Intervalo entre tarefas":"Tarefa "+(currentIndex+1)+" de "+tasks.length;
  const elapsed=Math.max(0,totalDuration-remaining);
  const percent=totalDuration>0?Math.min(100,(elapsed/totalDuration)*100):0;
-
  $("progressFill").style.width=percent+"%";
  $("progressPercent").textContent=Math.floor(percent)+"% concluído";
-
  const nextIndex=inBreak?currentIndex:currentIndex+1;
-
  if(nextIndex<tasks.length){
   $("nextTask").textContent="A seguir: ";
-
-  const strong=document.createElement("strong");
-  strong.textContent=tasks[nextIndex].name;
-
-  $("nextTask").appendChild(strong);
- }else{
-  $("nextTask").textContent="Última tarefa da programação";
- }
+  const strong=document.createElement("strong");strong.textContent=tasks[nextIndex].name;$("nextTask").appendChild(strong);
+ }else $("nextTask").textContent="Última tarefa da programação";
 }
-
 function togglePause(){
  if(!running)return;
-
  if(!paused){
   remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
-
-  if(!inBreak&&taskActiveStartedAt){
-   taskElapsedMs+=Date.now()-taskActiveStartedAt;
-   taskActiveStartedAt=0;
-  }
-
-  paused=true;
-
-  $("pauseButton").textContent="Continuar";
-  $("status").textContent="Cronômetro pausado.";
-
-  updateClock();
+  if(!inBreak&&taskActiveStartedAt){taskElapsedMs+=Date.now()-taskActiveStartedAt;taskActiveStartedAt=0;}
+  paused=true;$("pauseButton").textContent="Continuar";$("status").textContent="Cronômetro pausado.";updateClock();
  }else{
-  paused=false;
-  deadline=Date.now()+remaining*1000;
-
+  paused=false;deadline=Date.now()+remaining*1000;
   if(!inBreak)taskActiveStartedAt=Date.now();
-
-  $("pauseButton").textContent="Pausar";
-  $("status").textContent="Continue no seu ritmo.";
+  $("pauseButton").textContent="Pausar";$("status").textContent="Continue no seu ritmo.";
  }
 }
-
 function skipStep(){
  if(!running)return;
-
  clearInterval(timer);
-
- if(inBreak){
-  startTask();
- }else{
-  startBreak();
- }
+ if(inBreak)startTask();
+ else{saveCurrentTaskTime();startBreak();}
 }
-
 function playSound(){
  try{
-  const AudioCtx=window.AudioContext||window.webkitAudioContext;
-
-  if(!AudioCtx)return;
-
-  audioContext=audioContext||new AudioCtx();
-
-  if(audioContext.state==="suspended")audioContext.resume();
-
+  const AudioCtx=window.AudioContext||window.webkitAudioContext;if(!AudioCtx)return;
+  audioContext=audioContext||new AudioCtx();if(audioContext.state==="suspended")audioContext.resume();
   [0,.22,.44].forEach(delay=>{
-   const osc=audioContext.createOscillator();
-   const gain=audioContext.createGain();
-
-   osc.connect(gain);
-   gain.connect(audioContext.destination);
-
-   osc.frequency.value=880;
-
+   const osc=audioContext.createOscillator(),gain=audioContext.createGain();
+   osc.connect(gain);gain.connect(audioContext.destination);osc.frequency.value=880;
    gain.gain.setValueAtTime(.001,audioContext.currentTime+delay);
    gain.gain.exponentialRampToValueAtTime(.25,audioContext.currentTime+delay+.02);
    gain.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+delay+.18);
-
-   osc.start(audioContext.currentTime+delay);
-   osc.stop(audioContext.currentTime+delay+.2);
+   osc.start(audioContext.currentTime+delay);osc.stop(audioContext.currentTime+delay+.2);
   });
- }catch(e){
-  console.log("Som indisponível",e);
- }
+ }catch(e){console.log("Som indisponível",e);}
 }
-
 async function toggleFullscreen(){
  try{
-  if(document.fullscreenElement){
-   await document.exitFullscreen();
-  }else if($("execution").requestFullscreen){
-   await $("execution").requestFullscreen();
-  }
- }catch(e){
-  console.log(e);
- }
+  if(document.fullscreenElement)await document.exitFullscreen();
+  else if($("execution").requestFullscreen)await $("execution").requestFullscreen();
+ }catch(e){console.log(e);}
 }
-
 async function toggleRecording(){
- if(mediaRecorder&&mediaRecorder.state==="recording"){
-  mediaRecorder.stop();
-  return;
- }
-
- if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){
-  alert("A gravação de tela não está disponível neste navegador.");
-  return;
- }
-
+ if(mediaRecorder&&mediaRecorder.state==="recording"){mediaRecorder.stop();return;}
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getDisplayMedia){alert("A gravação de tela não está disponível neste navegador.");return;}
  try{
-  recordingStream=await navigator.mediaDevices.getDisplayMedia({
-   video:{frameRate:30},
-   audio:false
-  });
-
+  recordingStream=await navigator.mediaDevices.getDisplayMedia({video:{frameRate:30},audio:false});
   recordedChunks=[];
-
-  const mimeType=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")
-   ?"video/webm;codecs=vp9"
-   :"video/webm";
-
+  const mimeType=MediaRecorder.isTypeSupported("video/webm;codecs=vp9")?"video/webm;codecs=vp9":"video/webm";
   mediaRecorder=new MediaRecorder(recordingStream,{mimeType});
-
-  mediaRecorder.ondataavailable=e=>{
-   if(e.data.size>0)recordedChunks.push(e.data);
-  };
-
+  mediaRecorder.ondataavailable=e=>{if(e.data.size>0)recordedChunks.push(e.data);};
   mediaRecorder.onstop=()=>{
-   const blob=new Blob(recordedChunks,{type:"video/webm"});
-   const url=URL.createObjectURL(blob);
-   const a=document.createElement("a");
-
-   a.href=url;
-   a.download="meu-tempo-"+new Date().toISOString().replace(/[:.]/g,"-")+".webm";
-
-   document.body.appendChild(a);
-   a.click();
-   a.remove();
-
-   setTimeout(()=>URL.revokeObjectURL(url),1000);
-
-   if(recordingStream){
-    recordingStream.getTracks().forEach(track=>track.stop());
-    recordingStream=null;
-   }
-
-   $("recordButton").textContent="Gravar vídeo";
-   $("recordStatus").textContent="Gravação salva no dispositivo.";
-
-   mediaRecorder=null;
+   const blob=new Blob(recordedChunks,{type:"video/webm"}),url=URL.createObjectURL(blob),a=document.createElement("a");
+   a.href=url;a.download="meu-tempo-"+new Date().toISOString().replace(/[:.]/g,"-")+".webm";
+   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+   if(recordingStream){recordingStream.getTracks().forEach(track=>track.stop());recordingStream=null;}
+   $("recordButton").textContent="Gravar vídeo";$("recordStatus").textContent="Gravação salva no dispositivo.";mediaRecorder=null;
   };
-
-  recordingStream.getVideoTracks()[0].addEventListener("ended",()=>{
-   if(mediaRecorder&&mediaRecorder.state==="recording")mediaRecorder.stop();
-  });
-
-  mediaRecorder.start();
-
-  $("recordButton").textContent="Parar gravação";
-  $("recordStatus").textContent="Gravando a tela...";
+  recordingStream.getVideoTracks()[0].addEventListener("ended",()=>{if(mediaRecorder&&mediaRecorder.state==="recording")mediaRecorder.stop();});
+  mediaRecorder.start();$("recordButton").textContent="Parar gravação";$("recordStatus").textContent="Gravando a tela...";
  }catch(error){
-  if(recordingStream){
-   recordingStream.getTracks().forEach(track=>track.stop());
-   recordingStream=null;
-  }
-
-  $("recordStatus").textContent="Gravação cancelada ou não autorizada.";
-  console.log("Gravação:",error);
+  if(recordingStream){recordingStream.getTracks().forEach(track=>track.stop());recordingStream=null;}
+  $("recordStatus").textContent="Gravação cancelada ou não autorizada.";console.log("Gravação:",error);
  }
 }
-
 function finishProgram(completed=false){
- clearInterval(timer);
- timer=null;
- running=false;
- paused=false;
- taskActiveStartedAt=0;
- taskElapsedMs=0;
-
- if(mediaRecorder&&mediaRecorder.state==="recording"){
-  mediaRecorder.stop();
- }else if(recordingStream){
-  recordingStream.getTracks().forEach(track=>track.stop());
-  recordingStream=null;
- }
-
- $("execution").classList.remove("active","break-mode");
- $("breakMessage").style.display="none";
- $("startButton").disabled=!tasks.length;
- $("progressFill").style.width="0%";
- $("progressPercent").textContent="0% concluído";
- $("nextTask").textContent="A seguir: --";
-
- if(document.fullscreenElement){
-  document.exitFullscreen().catch(()=>{});
- }
-
- if(completed){
-  playSound();
-  alert("Parabéns! Você concluiu sua programação.");
- }
+ clearInterval(timer);timer=null;
+ if(running&&!inBreak&&taskStartedAt)saveCurrentTaskTime();
+ running=false;paused=false;taskActiveStartedAt=0;taskElapsedMs=0;taskStartedAt=0;
+ if(mediaRecorder&&mediaRecorder.state==="recording")mediaRecorder.stop();
+ else if(recordingStream){recordingStream.getTracks().forEach(track=>track.stop());recordingStream=null;}
+ $("execution").classList.remove("active","break-mode");$("breakMessage").style.display="none";
+ $("startButton").disabled=!tasks.length;$("progressFill").style.width="0%";
+ $("progressPercent").textContent="0% concluído";$("nextTask").textContent="A seguir: --";
+ if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
+ if(completed){playSound();alert("Parabéns! Você concluiu sua programação.");}
 }
-
 document.addEventListener("fullscreenchange",()=>{
- $("exitFullscreen").textContent=document.fullscreenElement
-  ?"Sair da tela cheia"
-  :"Ativar tela cheia";
+ $("exitFullscreen").textContent=document.fullscreenElement?"Sair da tela cheia":"Ativar tela cheia";
 });
-
 if("serviceWorker" in navigator){
  window.addEventListener("load",()=>{
   navigator.serviceWorker.register("./sw.js")
@@ -1220,28 +1077,23 @@ if("serviceWorker" in navigator){
    .catch(error=>console.error("Erro no sistema offline:",error));
  });
 }
-
 $("taskCategory").addEventListener("change",updateActivitySuggestions);
-
 $("activitySuggestion").addEventListener("change",()=>{
- if($("activitySuggestion").value){
-  $("taskName").value=$("activitySuggestion").value;
- }
+ if($("activitySuggestion").value)$("taskName").value=$("activitySuggestion").value;
 });
+$("taskName").addEventListener("input",()=>{$("activitySuggestion").value="";});
+$("taskName").addEventListener("keydown",e=>{if(e.key==="Enter")addTask();});
 
-$("taskName").addEventListener("input",()=>{
- $("activitySuggestion").value="";
-});
-
-$("taskName").addEventListener("keydown",e=>{
- if(e.key==="Enter")addTask();
-});
-
+const todayISO=localDateKey(new Date());
+$("timeDate").value=todayISO;
+$("dashboardMonth").value=currentMonthKey();
+$("dashboardMonth").addEventListener("change",renderTimeDashboard);
 updateActivitySuggestions();
 renderScheduleOptions();
 renderTasks();
 renderHistory();
 renderHome();
+renderTimeDashboard();
 showPage("home");
 </script>
 </body>
