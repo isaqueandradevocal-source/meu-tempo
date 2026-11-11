@@ -242,6 +242,24 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
  .time-donut{width:165px;height:165px}
  .time-donut:after{width:96px;height:96px}
 }
+
+/* TEMPO REAL — cronômetro crescente da tarefa */
+#realBox{display:inline-flex;align-items:baseline;gap:10px;margin:10px auto 0;padding:8px 18px;border:1px solid #34445e;border-radius:999px;background:#121c2d;color:#93a4bd;font-size:13px;letter-spacing:.3px}
+#realBox strong{font-size:clamp(20px,4.5vw,28px);color:#e2e8f0;font-variant-numeric:tabular-nums;letter-spacing:0}
+#realBox.paused strong{color:#e5bd69}
+#execution.break-mode #realBox{display:none}
+@media(max-width:600px){
+ #realBox{order:2;margin:0 0 6px}
+}
+.task-real{color:#18734b}
+.activity-bars{display:grid;gap:14px}
+.activity-row{min-width:0}
+.activity-row-top{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:#26364e;margin-bottom:6px}
+.activity-row-top span{font-weight:700;overflow-wrap:anywhere}
+.activity-row-top strong{white-space:nowrap;font-variant-numeric:tabular-nums;color:#1d3152}
+.activity-track{height:9px;border-radius:20px;background:#e8edf5;overflow:hidden}
+.activity-fill{height:100%;border-radius:20px;min-width:3px}
+.activity-meta{font-size:11px;color:#8792a3;margin-top:5px}
 </style>
 </head>
 <body>
@@ -274,7 +292,7 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
   </section>
   <section class="panel">
    <h2>Registrar tempo</h2>
-   <p class="note">As atividades feitas pelo cronômetro serão registradas automaticamente quando você concluir, pular ou encerrar uma tarefa. Use o registro manual apenas para atividades que realizou sem iniciar o cronômetro.</p>
+   <p class="note">As atividades feitas pelo cronômetro serão registradas automaticamente, com o tempo real investido, quando você concluir, pular ou encerrar uma tarefa. Use o registro manual apenas para atividades que realizou sem iniciar o cronômetro.</p>
    <div class="time-form">
     <div class="field wide"><label class="field-label" for="timeActivity">O que você fez?</label><input id="timeActivity" placeholder="Ex.: Estudar Pedagogia" autocomplete="off"></div>
     <div class="field"><label class="field-label" for="timeCategory">Categoria</label><select id="timeCategory"><option>Trabalho</option><option>Estudos</option><option>Espiritualidade</option><option>Casa</option><option>Área externa</option><option>Cuidados pessoais</option><option>Exercícios</option><option>Outros</option></select></div>
@@ -288,6 +306,11 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
   <section class="panel">
    <h2>Como seu tempo foi distribuído</h2>
    <div class="time-chart-wrap"><div class="time-donut" id="timeDonut"><div class="time-donut-label"><strong id="donutTotal">0h</strong><small>no período</small></div></div><div class="category-legend" id="categoryLegend"><p class="note">Seus registros por categoria aparecerão aqui.</p></div></div>
+  </section>
+  <section class="panel">
+   <h2>Tempo real por atividade</h2>
+   <div class="activity-bars" id="activityBars"></div>
+   <p id="activityBarsEmpty" class="dash-empty">Quando você registrar atividades neste período, o tempo real gasto em cada uma aparecerá aqui.</p>
   </section>
   <section class="panel">
    <h2>Registros do período</h2>
@@ -423,6 +446,7 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
   <h2 id="execName">Preparado?</h2>
   <div id="breakMessage" aria-live="polite"></div>
   <div id="clock">00:00</div>
+  <div id="realBox"><span>Tempo real investido</span><strong id="realClock">00:00</strong></div>
   <div id="progress">Vamos começar</div>
   <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
   <div id="progressPercent">0% concluído</div>
@@ -445,7 +469,7 @@ let dailyStats=JSON.parse(localStorage.getItem("meuTempoDailyStats")||"{}");
 let savedSchedules=loadSavedSchedules();
 let timeEntries=loadTimeEntries();
 
-let currentIndex=0,remaining=0,totalDuration=0,timer=null,paused=false,inBreak=false,running=false,audioContext=null,deadline=0;
+let currentIndex=0,remaining=0,remainingMs=0,totalDuration=0,timer=null,paused=false,inBreak=false,running=false,audioContext=null,deadline=0;
 let taskActiveStartedAt=0,taskElapsedMs=0,taskStartedAt=0;
 let mediaRecorder=null,recordedChunks=[],recordingStream=null,lastBreakMessage="";
 
@@ -480,6 +504,9 @@ const breakMessages=[
  "Aproveite o silêncio para organizar os pensamentos.",
  "Lembre-se do propósito por trás do que está fazendo."
 ];
+
+const statusLabels={"concluída":"Concluída","pulada":"Pulada","encerrada":"Encerrada"};
+const chartColors=["#4f8ff7","#65c58a","#f28b54","#f4c95d","#ae91ed","#ee8bb5","#48b8b0","#8795a8"];
 
 function updateActivitySuggestions(){
  const category=$("taskCategory").value;
@@ -528,9 +555,21 @@ function currentMonthKey(){
  return now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
 }
 function dateKeyForEntry(item){return String(item.date||"").slice(0,7);}
+function pad2(value){return String(value).padStart(2,"0");}
 function formatHours(minutes){
  const h=Math.floor(minutes/60),m=minutes%60;
  return h>0?h+"h "+String(m).padStart(2,"0")+"min":m+" min";
+}
+/* Segundos reais de um registro (registros manuais usam os minutos informados) */
+function entrySeconds(item){
+ const seconds=Number(item.seconds);
+ return seconds>0?seconds:Number(item.minutes||0)*60;
+}
+/* Totais do painel: arredonda para minutos, mas mostra segundos quando o total é menor que 1 min */
+function formatTotal(seconds){
+ const total=Math.max(0,Math.round(Number(seconds)||0));
+ if(total>0&&total<60)return total+" s";
+ return formatHours(Math.round(total/60));
 }
 
 function addTimeEntry(){
@@ -566,15 +605,15 @@ function deleteTimeEntry(id){
 function renderTimeDashboard(){
  const month=$("dashboardMonth")?.value||currentMonthKey();
  const entries=timeEntries.filter(item=>dateKeyForEntry(item)===month).sort((a,b)=>(b.date+b.start).localeCompare(a.date+a.start));
- const total=entries.reduce((sum,item)=>sum+Number(item.minutes||0),0);
+ const total=entries.reduce((sum,item)=>sum+entrySeconds(item),0);
  const days=new Set(entries.map(item=>item.date)).size;
- $("monthTotal").textContent=formatHours(total);
+ $("monthTotal").textContent=formatTotal(total);
  $("monthEntries").textContent=entries.length;
- $("monthAverage").textContent=days?formatHours(Math.round(total/days)):"0 min";
- $("donutTotal").textContent=total?formatHours(total):"0h";
+ $("monthAverage").textContent=days?formatTotal(total/days):"0 min";
+ $("donutTotal").textContent=total?formatTotal(total):"0h";
  const totals={};
- entries.forEach(item=>{const key=item.category||"Outros";totals[key]=(totals[key]||0)+Number(item.minutes||0);});
- const colors=["#4f8ff7","#65c58a","#f28b54","#f4c95d","#ae91ed","#ee8bb5","#48b8b0","#8795a8"];
+ entries.forEach(item=>{const key=item.category||"Outros";totals[key]=(totals[key]||0)+entrySeconds(item);});
+ const colors=chartColors;
  const cats=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
  let offset=0;
  const segments=cats.map(([name,value],i)=>{
@@ -591,9 +630,42 @@ function renderTimeDashboard(){
   const row=document.createElement("div");row.className="legend-row";
   const dot=document.createElement("span");dot.className="legend-dot";dot.style.background=colors[i%colors.length];
   const label=document.createElement("span");label.textContent=name;
-  const amount=document.createElement("strong");amount.textContent=formatHours(value);
+  const amount=document.createElement("strong");amount.textContent=formatTotal(value);
   row.append(dot,label,amount);legend.appendChild(row);
  });
+
+ /* Tempo real gasto em cada atividade */
+ const bars=$("activityBars");bars.innerHTML="";
+ const groups={};
+ entries.forEach(item=>{
+  const key=String(item.activity||"").trim().toLowerCase()||"sem nome";
+  if(!groups[key])groups[key]={name:item.activity||"Atividade",category:item.category||"Outros",seconds:0,count:0,planned:0,plannedAll:true};
+  const group=groups[key];
+  group.seconds+=entrySeconds(item);group.count++;
+  if(Number(item.plannedSeconds)>0)group.planned+=Number(item.plannedSeconds);else group.plannedAll=false;
+ });
+ const ranking=Object.values(groups).sort((a,b)=>b.seconds-a.seconds);
+ $("activityBarsEmpty").style.display=ranking.length?"none":"block";
+ const maxSeconds=ranking.length?ranking[0].seconds:1;
+ ranking.slice(0,12).forEach(group=>{
+  const catIndex=cats.findIndex(c=>c[0]===group.category);
+  const color=colors[(catIndex<0?0:catIndex)%colors.length];
+  const row=document.createElement("div");row.className="activity-row";
+  const top=document.createElement("div");top.className="activity-row-top";
+  const name=document.createElement("span");name.textContent=group.name;
+  const time=document.createElement("strong");time.textContent=formatDuration(group.seconds,true);
+  top.append(name,time);
+  const track=document.createElement("div");track.className="activity-track";
+  const fill=document.createElement("div");fill.className="activity-fill";
+  fill.style.width=Math.max(2,group.seconds/maxSeconds*100)+"%";fill.style.background=color;
+  track.appendChild(fill);
+  const meta=document.createElement("div");meta.className="activity-meta";
+  const parts=[group.category,group.count===1?"1 registro":group.count+" registros"];
+  if(group.plannedAll&&group.planned>0)parts.push("Planejado: "+formatDuration(group.planned,true));
+  meta.textContent=parts.join(" · ");
+  row.append(top,track,meta);bars.appendChild(row);
+ });
+
  const list=$("timeEntriesList");list.innerHTML="";
  $("timeEntriesEmpty").style.display=entries.length?"none":"block";
  entries.forEach(item=>{
@@ -602,10 +674,15 @@ function renderTimeDashboard(){
   const name=document.createElement("div");name.className="time-entry-name";name.textContent=item.activity;
   const meta=document.createElement("div");meta.className="time-entry-meta";
   const date=new Date(item.date+"T12:00:00").toLocaleDateString("pt-BR");
-  meta.textContent=item.category+" · "+date+" · "+item.start+"–"+item.end;
+  const parts=[item.category,date,item.start+"–"+item.end];
+  if(item.source==="cronometro"){
+   if(Number(item.plannedSeconds)>0)parts.push("Planejado: "+formatDuration(Number(item.plannedSeconds),true));
+   if(statusLabels[item.status])parts.push(statusLabels[item.status]);
+  }
+  meta.textContent=parts.join(" · ");
   const del=document.createElement("button");del.type="button";del.className="danger";del.textContent="Excluir";del.onclick=()=>deleteTimeEntry(item.id);
   left.append(name,meta,del);
-  const duration=document.createElement("div");duration.className="time-entry-duration";duration.textContent=formatHours(Number(item.minutes));
+  const duration=document.createElement("div");duration.className="time-entry-duration";duration.textContent=formatDuration(entrySeconds(item),true);
   row.append(left,duration);list.appendChild(row);
  });
 }
@@ -618,10 +695,19 @@ function renderHome(){
 }
 function beginFromHome(){showPage("planner");startProgram();}
 
-function formatDuration(seconds){
- const totalMinutes=Math.floor(Math.max(0,seconds)/60);
- const hours=Math.floor(totalMinutes/60),minutes=totalMinutes%60;
- return hours>0?hours+"h "+String(minutes).padStart(2,"0")+"min":totalMinutes+" min";
+/* Formata segundos. Com precise=true mostra também os segundos (ex.: 24 min 50 s) */
+function formatDuration(seconds,precise){
+ const total=Math.max(0,Math.round(Number(seconds)||0));
+ if(total>0&&total<60)return total+" s";
+ const hours=Math.floor(total/3600),minutes=Math.floor((total%3600)/60),secs=total%60;
+ if(hours>0)return hours+"h "+pad2(minutes)+"min";
+ return minutes+" min"+(precise&&secs?" "+pad2(secs)+" s":"");
+}
+/* Relógio do cronômetro: MM:SS (ou H:MM:SS a partir de 1 hora) */
+function formatClock(totalSeconds){
+ const s=Math.max(0,Math.round(totalSeconds));
+ const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+ return (h>0?h+":"+pad2(m):pad2(m))+":"+pad2(sec);
 }
 function localDateKey(date){
  return date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0")+"-"+String(date.getDate()).padStart(2,"0");
@@ -653,36 +739,52 @@ function renderHistory(){
    const time=new Date(entry.completedAt).toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
    meta.textContent=(entry.category?entry.category+" · ":"")+"Concluída às "+time;
    const times=document.createElement("div");times.className="history-times";
-   const planned=document.createElement("span");planned.textContent="Planejado: "+formatDuration(Number(entry.plannedSeconds)||0);
-   const actual=document.createElement("span");actual.textContent="Realizado: "+formatDuration(Number(entry.actualSeconds)||0);
+   const planned=document.createElement("span");planned.textContent="Planejado: "+formatDuration(Number(entry.plannedSeconds)||0,true);
+   const actual=document.createElement("span");actual.textContent="Realizado: "+formatDuration(Number(entry.actualSeconds)||0,true);
    times.append(planned,actual);card.append(title,meta,times);list.appendChild(card);
   });
  });
 }
 
-function saveCurrentTaskTime(){
+/* ===== TEMPO REAL (cronômetro crescente) ===== */
+function currentTaskElapsedMs(){
+ return taskElapsedMs+(taskActiveStartedAt?Date.now()-taskActiveStartedAt:0);
+}
+function updateRealClock(){
+ const clock=$("realClock");if(!clock)return;
+ clock.textContent=formatClock(currentTaskElapsedMs()/1000);
+ $("realBox").classList.toggle("paused",paused&&!inBreak);
+}
+
+/* Registra o tempo real da tarefa atual (concluída, pulada ou encerrada) e zera o cronômetro crescente */
+function saveCurrentTaskTime(status){
  const task=tasks[currentIndex];
  if(!task||!taskStartedAt)return 0;
  const endedAt=new Date();
- const activeMs=taskElapsedMs+(taskActiveStartedAt?Date.now()-taskActiveStartedAt:0);
- const actualSeconds=Math.max(0,Math.round(activeMs/1000));
+ const actualSeconds=Math.max(0,Math.round(currentTaskElapsedMs()/1000));
+ const startedAt=new Date(taskStartedAt);
+ taskStartedAt=0;taskActiveStartedAt=0;taskElapsedMs=0;
  if(actualSeconds>0){
-  const startedAt=new Date(taskStartedAt);
-  const pad=value=>String(value).padStart(2,"0");
-  const date=startedAt.getFullYear()+"-"+pad(startedAt.getMonth()+1)+"-"+pad(startedAt.getDate());
-  const start=pad(startedAt.getHours())+":"+pad(startedAt.getMinutes());
-  const end=pad(endedAt.getHours())+":"+pad(endedAt.getMinutes());
+  const date=startedAt.getFullYear()+"-"+pad2(startedAt.getMonth()+1)+"-"+pad2(startedAt.getDate());
+  const start=pad2(startedAt.getHours())+":"+pad2(startedAt.getMinutes());
+  const end=pad2(endedAt.getHours())+":"+pad2(endedAt.getMinutes());
   timeEntries.push({
    id:String(Date.now())+"-"+Math.random().toString(36).slice(2,8),
    activity:task.name,category:task.category||"Outros",date,start,end,
    minutes:Math.max(1,Math.round(actualSeconds/60)),seconds:actualSeconds,
+   plannedSeconds:Number(task.minutes)*60,status:status||"encerrada",
    startedAt:startedAt.toISOString(),endedAt:endedAt.toISOString(),
    source:"cronometro",createdAt:endedAt.toISOString()
   });
   saveTimeEntries();
+  const key=todayKey();
+  if(!dailyStats[key])dailyStats[key]={completed:0,seconds:0};
+  dailyStats[key].seconds=(Number(dailyStats[key].seconds)||0)+actualSeconds;
+  localStorage.setItem("meuTempoDailyStats",JSON.stringify(dailyStats));
+  task.lastActualSeconds=actualSeconds;
+  saveTasks();renderTasks();
   renderTimeDashboard();
  }
- taskStartedAt=0;taskActiveStartedAt=0;taskElapsedMs=0;
  renderHome();
  return actualSeconds;
 }
@@ -690,23 +792,22 @@ function saveCurrentTaskTime(){
 function recordCompletedTask(){
  const task=tasks[currentIndex];
  if(!task)return;
- const activeMs=taskElapsedMs+(taskActiveStartedAt?Date.now()-taskActiveStartedAt:0);
- const actualSeconds=Math.max(0,Math.round(activeMs/1000));
- saveCurrentTaskTime();
+ const plannedSeconds=Number(task.minutes)*60;
+ const actualSeconds=saveCurrentTaskTime("concluída");
  const key=todayKey();
  if(!dailyStats[key])dailyStats[key]={completed:0,seconds:0};
  dailyStats[key].completed++;
- dailyStats[key].seconds+=actualSeconds;
  localStorage.setItem("meuTempoDailyStats",JSON.stringify(dailyStats));
  if(task.recordHistory===true){
   historyEntries.push({
    id:String(Date.now())+"-"+String(Math.random()).slice(2,8),
    name:task.name,category:task.category||"",
-   plannedSeconds:Number(task.minutes)*60,actualSeconds,
+   plannedSeconds,actualSeconds,
    completedAt:new Date().toISOString()
   });
   saveHistory();
  }
+ renderHome();
 }
 
 function renderTasks(){
@@ -720,7 +821,13 @@ function renderTasks(){
   const down=document.createElement("button");down.className="secondary";down.textContent="↓";down.title="Mover para baixo";down.disabled=index===tasks.length-1;down.onclick=()=>moveTask(index,1);
   const edit=document.createElement("button");edit.className="secondary";edit.textContent="Editar";edit.onclick=()=>editTask(index);
   const del=document.createElement("button");del.className="danger";del.textContent="Excluir";del.onclick=()=>deleteTask(index);
-  item.append(name,duration,up,down,edit,del);$("taskList").appendChild(item);
+  item.append(name,duration);
+  if(Number(task.lastActualSeconds)>0){
+   const real=document.createElement("small");real.className="task-real";
+   real.textContent="Último real: "+formatDuration(Number(task.lastActualSeconds),true);
+   item.appendChild(real);
+  }
+  item.append(up,down,edit,del);$("taskList").appendChild(item);
  });
  $("startButton").disabled=!tasks.length||running;
 }
@@ -948,7 +1055,7 @@ function startTask(){
  if(currentIndex>=tasks.length){finishProgram(true);return;}
  inBreak=false;taskElapsedMs=0;taskStartedAt=Date.now();taskActiveStartedAt=taskStartedAt;
  $("execution").classList.remove("break-mode");$("breakMessage").style.display="none";
- remaining=tasks[currentIndex].minutes*60;totalDuration=remaining;
+ remaining=tasks[currentIndex].minutes*60;remainingMs=remaining*1000;totalDuration=remaining;
  $("execTag").textContent="TAREFA "+(currentIndex+1)+" DE "+tasks.length;
  $("execName").textContent=tasks[currentIndex].name;
  $("status").textContent="Concentre-se nesta tarefa.";
@@ -961,7 +1068,7 @@ function startBreak(){
  if(currentIndex>=tasks.length){finishProgram(true);return;}
  if(duration<=0){startTask();return;}
  inBreak=true;$("execution").classList.add("break-mode");
- remaining=duration*60;totalDuration=remaining;
+ remaining=duration*60;remainingMs=remaining*1000;totalDuration=remaining;
  $("execTag").textContent="INTERVALO";$("execName").textContent="Hora de respirar";
  $("breakMessage").textContent=getBreakMessage();$("breakMessage").style.display="block";
  $("status").textContent="Descanse. A próxima tarefa virá em seguida.";
@@ -969,11 +1076,12 @@ function startBreak(){
  updateClock();beginTimer();
 }
 function beginTimer(){
- clearInterval(timer);deadline=Date.now()+remaining*1000;
+ clearInterval(timer);deadline=Date.now()+remainingMs;
  timer=setInterval(()=>{
   if(paused)return;
-  remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));updateClock();
-  if(remaining<=0){
+  remainingMs=Math.max(0,deadline-Date.now());
+  remaining=Math.ceil(remainingMs/1000);updateClock();
+  if(remainingMs<=0){
    clearInterval(timer);
    if(inBreak){playSound();startTask();}
    else{recordCompletedTask();if(currentIndex<tasks.length-1)playSound();startBreak();}
@@ -993,24 +1101,26 @@ function updateClock(){
   $("nextTask").textContent="A seguir: ";
   const strong=document.createElement("strong");strong.textContent=tasks[nextIndex].name;$("nextTask").appendChild(strong);
  }else $("nextTask").textContent="Última tarefa da programação";
+ updateRealClock();
 }
+/* Pausa e retoma os dois cronômetros juntos: o regressivo (deadline) e o tempo real crescente */
 function togglePause(){
  if(!running)return;
  if(!paused){
-  remaining=Math.max(0,Math.ceil((deadline-Date.now())/1000));
+  remainingMs=Math.max(0,deadline-Date.now());remaining=Math.ceil(remainingMs/1000);
   if(!inBreak&&taskActiveStartedAt){taskElapsedMs+=Date.now()-taskActiveStartedAt;taskActiveStartedAt=0;}
-  paused=true;$("pauseButton").textContent="Continuar";$("status").textContent="Cronômetro pausado.";updateClock();
+  paused=true;$("pauseButton").textContent="Continuar";$("status").textContent=inBreak?"Intervalo pausado.":"Cronômetros pausados.";updateClock();
  }else{
-  paused=false;deadline=Date.now()+remaining*1000;
-  if(!inBreak)taskActiveStartedAt=Date.now();
-  $("pauseButton").textContent="Pausar";$("status").textContent="Continue no seu ritmo.";
+  paused=false;deadline=Date.now()+remainingMs;
+  if(!inBreak&&taskStartedAt)taskActiveStartedAt=Date.now();
+  $("pauseButton").textContent="Pausar";$("status").textContent="Continue no seu ritmo.";updateRealClock();
  }
 }
 function skipStep(){
  if(!running)return;
  clearInterval(timer);
  if(inBreak)startTask();
- else{saveCurrentTaskTime();startBreak();}
+ else{saveCurrentTaskTime("pulada");startBreak();}
 }
 function playSound(){
  try{
@@ -1057,13 +1167,14 @@ async function toggleRecording(){
 }
 function finishProgram(completed=false){
  clearInterval(timer);timer=null;
- if(running&&!inBreak&&taskStartedAt)saveCurrentTaskTime();
+ if(running&&!inBreak&&taskStartedAt)saveCurrentTaskTime("encerrada");
  running=false;paused=false;taskActiveStartedAt=0;taskElapsedMs=0;taskStartedAt=0;
  if(mediaRecorder&&mediaRecorder.state==="recording")mediaRecorder.stop();
  else if(recordingStream){recordingStream.getTracks().forEach(track=>track.stop());recordingStream=null;}
  $("execution").classList.remove("active","break-mode");$("breakMessage").style.display="none";
  $("startButton").disabled=!tasks.length;$("progressFill").style.width="0%";
  $("progressPercent").textContent="0% concluído";$("nextTask").textContent="A seguir: --";
+ $("realClock").textContent="00:00";$("realBox").classList.remove("paused");
  if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
  if(completed){playSound();alert("Parabéns! Você concluiu sua programação.");}
 }
