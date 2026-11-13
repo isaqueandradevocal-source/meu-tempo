@@ -1,7 +1,5 @@
-
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head>
+<html lang="pt-BR"><head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Meu Tempo</title>
@@ -301,6 +299,14 @@ button.danger:hover:not(:disabled) { background: #ffe1e1; box-shadow: none; }
 }
 @media(min-width:601px) { .page-nav { padding-bottom: 2px; } }
 
+
+/* MEU TEMPO — DUAS ABAS */
+.page-nav{gap:8px}
+@media(max-width:600px){.page-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.page-nav #plannerTab::before{content:"⌂"}.page-nav #homeTab::before{content:"◷"}}
+#homePage .history-summary{margin-top:8px}
+/* Botão verde-sálvia */
+#plannerPage button.planner-add{background:#557568;color:#fff;min-height:50px;border-radius:12px;font-weight:700;box-shadow:none}
+#plannerPage button.planner-add:hover:not(:disabled){background:#456357;color:#fff}
 </style>
 </head>
 <body>
@@ -308,18 +314,23 @@ button.danger:hover:not(:disabled) { background: #ffe1e1; box-shadow: none; }
 <header>
  <h1>Meu Tempo</h1>
  <p>Planejador de execução — Organize seu dia. Concentre-se em uma tarefa por vez.</p>
- <nav class="page-nav" aria-label="Navegação principal">
-  <button type="button" id="homeTab" class="active" onclick="showPage('home')">Início</button>
-  <button type="button" id="plannerTab" onclick="showPage('planner')">Programação</button>
-  <button type="button" id="historyTab" onclick="showPage('history')">Histórico</button>
- </nav>
+ <nav class="page-nav" aria-label="Navegação principal"><button type="button" id="plannerTab" class="active" onclick="showPage('planner')">Início</button><button type="button" id="homeTab" onclick="showPage('home')">Histórico</button></nav>
 </header>
 
-<section id="homePage">
+<section id="homePage" style="display: none;">
  <main>
   <section class="home-intro">
-   <h2>Seu tempo em números.</h2>
-   <p>Registre como você usa suas horas. Observe seus hábitos, compare períodos e decida conscientemente onde investir seu tempo.</p>
+   <h2>Histórico</h2>
+   <p>Seu tempo investido, as atividades concluídas e sua evolução.</p>
+  </section><section class="panel">
+   <h2>Histórico de tarefas concluídas</h2>
+   <p class="note">Aqui aparecem somente as tarefas que você escolheu registrar e concluiu até o fim.</p>
+   <div class="history-summary">
+    <div class="history-stat"><small>Tarefas concluídas</small><strong id="historyCount">0</strong></div>
+    <div class="history-stat"><small>Tempo realizado</small><strong id="historyTotalTime">0 min</strong></div>
+   </div>
+   <div id="historyList"></div>
+   <p id="historyEmpty" class="history-empty">Ainda não há tarefas registradas. Ao adicionar uma atividade, escolha “Sim” em “Registrar no histórico?” para acompanhá-la aqui.</p>
   </section>
   <section class="panel">
    <h2>Visão geral</h2>
@@ -358,11 +369,7 @@ button.danger:hover:not(:disabled) { background: #ffe1e1; box-shadow: none; }
    <div id="timeEntriesList"></div>
    <p id="timeEntriesEmpty" class="dash-empty">Ainda não há atividades registradas neste período. Inicie uma tarefa pelo cronômetro ou adicione um registro manual.</p>
   </section>
-  <section class="panel">
-   <h2>Seu planejamento</h2>
-   <p class="note">O cronômetro e as tarefas continuam disponíveis na programação.</p>
-   <div class="home-actions"><button type="button" onclick="showPage('planner')">Organizar programação</button><button type="button" class="secondary" onclick="beginFromHome()">▶ Começar agora</button></div>
-  </section>
+  
   <section class="panel" style="display:none">
    <h2>Resumo de hoje</h2>
    <div class="home-stats">
@@ -378,10 +385,10 @@ button.danger:hover:not(:disabled) { background: #ffe1e1; box-shadow: none; }
  </main>
 </section>
 
-<div id="plannerPage" class="hidden-page">
+<div id="plannerPage" class="">
  <main>
   <section class="panel planner-panel">
-   <h2>Programação</h2>
+   <h2>Início</h2>
 
    <div class="planner-form">
     <div class="field">
@@ -423,7 +430,7 @@ button.danger:hover:not(:disabled) { background: #ffe1e1; box-shadow: none; }
     <div class="field">
      <label class="field-label" for="taskHistory">Registrar no histórico?</label>
      <select id="taskHistory">
-      <option value="nao" selected>Não</option>
+      <option value="nao" selected="">Não</option>
       <option value="sim">Sim</option>
      </select>
     </div>
@@ -489,20 +496,7 @@ button.danger:hover:not(:disabled) { background: #ffe1e1; box-shadow: none; }
  </main>
 </div>
 
-<section id="historyPage" class="hidden-page">
- <main>
-  <section class="panel">
-   <h2>Histórico de tarefas concluídas</h2>
-   <p class="note">Aqui aparecem somente as tarefas que você escolheu registrar e concluiu até o fim.</p>
-   <div class="history-summary">
-    <div class="history-stat"><small>Tarefas concluídas</small><strong id="historyCount">0</strong></div>
-    <div class="history-stat"><small>Tempo realizado</small><strong id="historyTotalTime">0 min</strong></div>
-   </div>
-   <div id="historyList"></div>
-   <p id="historyEmpty" class="history-empty">Ainda não há tarefas registradas. Ao adicionar uma atividade, escolha “Sim” em “Registrar no histórico?” para acompanhá-la aqui.</p>
-  </section>
- </main>
-</section>
+
 
 <div id="execution">
  <button id="exitFullscreen" onclick="toggleFullscreen()">Sair da tela cheia</button>
@@ -594,15 +588,15 @@ function saveTasks(){localStorage.setItem("meuTempoTasks",JSON.stringify(tasks))
 function saveHistory(){localStorage.setItem("meuTempoHistory",JSON.stringify(historyEntries));}
 
 function showPage(page){
- $("homePage").style.display=page==="home"?"block":"none";
- $("plannerPage").style.display=page==="planner"?"block":"none";
- $("historyPage").style.display=page==="history"?"block":"none";
- $("homeTab").classList.toggle("active",page==="home");
- $("plannerTab").classList.toggle("active",page==="planner");
- $("historyTab").classList.toggle("active",page==="history");
- if(page==="history")renderHistory();
- if(page==="home")renderHome();
-}
+  // Compatibilidade com chamadas antigas à aba histórica.
+  if(page==='history')page='home';
+  const isPlanner=page==='planner';
+  $('plannerPage').style.display=isPlanner?'block':'none';
+  $('homePage').style.display=isPlanner?'none':'block';
+  $('plannerTab').classList.toggle('active',isPlanner);
+  $('homeTab').classList.toggle('active',!isPlanner);
+  if(!isPlanner){renderHome();renderTimeDashboard();renderHistory();}
+ }
 
 function todayKey(){
  const now=new Date();
@@ -1271,7 +1265,6 @@ renderTasks();
 renderHistory();
 renderHome();
 renderTimeDashboard();
-showPage("home");
-</script>
-</body>
-</html>
+showPage("planner");</script>
+
+</body></html>
