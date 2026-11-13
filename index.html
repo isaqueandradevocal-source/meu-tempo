@@ -323,13 +323,45 @@ button.danger:hover:not(:disabled) { background: #ffe1e1; box-shadow: none; }
 /* Botão verde-sálvia */
 #plannerPage button.planner-add{background:#557568;color:#fff;min-height:50px;border-radius:12px;font-weight:700;box-shadow:none}
 #plannerPage button.planner-add:hover:not(:disabled){background:#456357;color:#fff}
+
+/* MEU TEMPO — INICIO MINIMALISTA V2 */
+
+:root{--mt-navy:#424448;--mt-blue:#424448;--mt-blue-dark:#34363a;--mt-bg:#424448;--mt-card:#ffffff;--mt-text:#34363a;--grafite:#424448;--branco:#ffffff}
+body{background:#424448;color:#34363a}
+header,.home-intro{background:#424448;box-shadow:none}
+#plannerPage .planner-panel{background:#424448;color:#ffffff}
+#plannerPage .planner-panel h2{color:#ffffff;margin:0 0 12px}
+#plannerPage .planner-form{display:grid;grid-template-columns:minmax(0,1fr) 98px;gap:9px;background:#595b5f;padding:12px;border-radius:14px}
+#plannerPage .planner-form .planner-hidden-internal{display:none!important}
+#plannerPage .planner-form .voice-area{order:-2;grid-column:1/-1;background:#424448;border:1px solid #77797e;padding:10px;border-radius:12px}
+#plannerPage .planner-form .voice-area button{background:#e9eaed;color:#424448;min-height:42px}
+#plannerPage .planner-form .voice-area button:hover:not(:disabled){background:#ffffff;color:#424448}
+#plannerPage .planner-form .voice-status{font-size:12px;color:#d1d3d6;margin-top:6px}
+#plannerPage .planner-form .planner-name{order:-1;grid-column:1;min-width:0}
+#plannerPage .planner-form .field:has(#taskMinutes){order:-1;grid-column:2;min-width:0}
+#plannerPage .planner-form .field-label{color:#ffffff;font-size:12px}
+#plannerPage .planner-form input{min-width:0;width:100%;background:#ffffff;color:#34363a}
+#plannerPage .planner-form button.planner-add{grid-column:1/-1;order:0;background:#557568;color:#ffffff;border-radius:12px;min-height:48px;box-shadow:none}
+#plannerPage .planner-form button.planner-add:hover:not(:disabled){background:#456357;color:#ffffff}
+#plannerPage .planner-list-heading,#plannerPage .planner-list-heading span{color:#ffffff}
+#plannerPage .planner-list-heading span{font-size:12px;color:#d1d3d6}
+#plannerPage .task{background:#595b5f;border:1px solid #707278;border-radius:12px;padding:11px;margin-bottom:7px;color:white}
+#plannerPage .taskname,#plannerPage .task small{color:#ffffff}
+#plannerPage .planner-details{background:#ffffff;color:#424448}
+#plannerPage .planner-details summary,#plannerPage .planner-details label{color:#424448}
+#plannerPage #startButton{background:#245c68;color:#ffffff;min-height:54px;border-radius:14px;width:100%;box-shadow:none}
+#plannerPage #startButton:hover:not(:disabled){background:#1b4751;color:#ffffff}
+#execution,#execution:fullscreen{background:#424448}
+#realBox,#breakMessage{background:#595b5f;border-color:#77797e;color:#ffffff}
+#clock,#realBox strong{color:#ffffff}
+@media(max-width:600px){.page-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.page-nav #plannerTab::before{content:"⌂"}.page-nav #homeTab::before{content:"◷"}#plannerPage .planner-form{grid-template-columns:minmax(0,1fr) 88px}#plannerPage .planner-form .planner-name{grid-column:1}#plannerPage .planner-form .field:has(#taskMinutes){grid-column:2}}
 </style>
 </head>
 <body>
 
 <header>
  <h1>Meu Tempo</h1>
- <p>Planejador de execução — Organize seu dia. Concentre-se em uma tarefa por vez.</p>
+ <p>Planeje menos. Execute melhor.</p>
  <nav class="page-nav" aria-label="Navegação principal"><button type="button" id="plannerTab" class="active" onclick="showPage('planner')">Início</button><button type="button" id="homeTab" onclick="showPage('home')">Histórico</button></nav>
 </header>
 
@@ -407,7 +439,7 @@ button.danger:hover:not(:disabled) { background: #ffe1e1; box-shadow: none; }
    <h2>Início</h2>
 
    <div class="planner-form">
-    <div class="field">
+    <div class="field planner-hidden-internal">
      <label class="field-label" for="taskCategory">Categoria</label>
      <select id="taskCategory">
       <option value="Casa">Casa</option>
@@ -421,7 +453,7 @@ button.danger:hover:not(:disabled) { background: #ffe1e1; box-shadow: none; }
      </select>
     </div>
 
-    <div class="field">
+    <div class="field planner-hidden-internal">
      <label class="field-label" for="activitySuggestion">Sugestões</label>
      <select id="activitySuggestion">
       <option value="">Escolha uma sugestão</option>
@@ -429,21 +461,21 @@ button.danger:hover:not(:disabled) { background: #ffe1e1; box-shadow: none; }
     </div>
 
     <div class="field planner-name">
-     <label class="field-label" for="taskName">Nome da atividade</label>
-     <input id="taskName" placeholder="Ex.: Organizar a estante" autocomplete="off">
+     <label class="field-label" for="taskName">Atividade</label>
+     <input id="taskName" placeholder="O que você vai fazer?" autocomplete="off">
     </div>
 
     <div class="voice-area">
      <button type="button" class="secondary" id="voiceButton" onclick="startVoiceCapture()">🎙️ Falar uma tarefa</button>
-     <p id="voiceStatus" class="voice-status" aria-live="polite">Toque no microfone e diga a atividade e o tempo.</p>
+     <p id="voiceStatus" class="voice-status" aria-live="polite">Ex.: Estudar por 40 minutos</p>
     </div>
 
     <div class="field">
-     <label class="field-label" for="taskMinutes">Duração (min)</label>
+     <label class="field-label" for="taskMinutes">Minutos</label>
      <input id="taskMinutes" type="number" min="1" max="600" value="10">
     </div>
 
-    <div class="field">
+    <div class="field planner-hidden-internal">
      <label class="field-label" for="taskHistory">Registrar no histórico?</label>
      <select id="taskHistory">
       <option value="nao" selected="">Não</option>
@@ -455,10 +487,7 @@ button.danger:hover:not(:disabled) { background: #ffe1e1; box-shadow: none; }
    </div>
 
   
-   <div class="planner-list-heading">
-    <strong>Minhas tarefas</strong>
-    <span>Lista de execução</span>
-   </div>
+   <div class="planner-list-heading"><strong>Sua programação</strong><span id="plannerTaskCount" aria-live="polite">0 tarefas · 0 min</span></div>
 
    <div class="planner-task-scroll">
     <div id="taskList"></div>
@@ -506,7 +535,7 @@ button.danger:hover:not(:disabled) { background: #ffe1e1; box-shadow: none; }
   </details>
 
   <div class="planner-bottom-actions">
-   <button onclick="startProgram()" id="startButton">▶Começar programação</button>
+   <button onclick="startProgram()" id="startButton">▶ Começar programação</button>
    <button class="secondary" onclick="clearTasks()">Limpar tarefas</button>
   </div>
  </main>
@@ -1283,4 +1312,8 @@ renderHome();
 renderTimeDashboard();
 showPage("planner");</script>
 
-</body></html>
+<script id="mtTaskSummaryScript">(function(){
+function update(){var box=document.getElementById('taskList'),label=document.getElementById('plannerTaskCount');if(!box||!label)return;var rows=box.querySelectorAll('.task');var count=rows.length;var mins=0;rows.forEach(function(row){var text=row.innerText||'';var matches=text.match(/(\d+)\s*min/gi)||[];if(matches.length)mins+=Number(matches[0].match(/\d+/)[0]);});label.textContent=count+(count===1?' tarefa':' tarefas')+' · '+mins+' min';}
+function init(){var box=document.getElementById('taskList');if(!box)return;new MutationObserver(update).observe(box,{childList:true,subtree:true,characterData:true});update();}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();</script></body></html>
