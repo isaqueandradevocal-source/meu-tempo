@@ -44,26 +44,149 @@ button.danger{background:#fee2e2;color:#991b1b}
 .voice-status.success{color:#18734b}
 .voice-status.error{color:#b42332}
 
-/* TELA DE EXECUÇÃO */
-#execution{display:none;position:fixed;inset:0;width:100%;height:100%;height:100dvh;background:#424448;color:white;z-index:9999;align-items:center;justify-content:center;text-align:center;padding:24px;overflow:auto}
-#execution.active{display:flex}
-.exec-content{width:100%;max-width:700px}
-.exec-tag{color:#93a4bd;text-transform:uppercase;letter-spacing:2px;font-size:13px}
-#execName{font-size:clamp(28px,6vw,48px);margin:25px 0}
-#breakMessage{display:none;max-width:580px;margin:-8px auto 24px;padding:14px 18px;border:1px solid #34445e;border-radius:12px;background:#121c2d;color:#dbeafe;font-size:clamp(16px,3vw,20px);line-height:1.5}
-#clock{font-size:clamp(76px,17vw,150px);font-weight:bold;letter-spacing:-5px;font-variant-numeric:tabular-nums;line-height:1.1}
-#progress{color:#9caec8;margin:12px 0 18px}
-.progress-track{width:100%;height:16px;background:#26334a;border-radius:30px;overflow:hidden;margin:0 auto 28px;box-shadow:inset 0 2px 5px #0005}
-.progress-fill{width:0%;height:100%;background:linear-gradient(90deg,#2563eb,#38bdf8);border-radius:30px;transition:width .25s linear}
-#progressPercent{color:#93a4bd;font-size:13px;margin-top:-20px;margin-bottom:25px}
-#nextTask{color:#8290a5;font-size:13px;text-align:right;margin-top:-15px;margin-bottom:25px}
-#nextTask strong{color:#b8c5d8;font-weight:normal}
-.exec-buttons{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
-.exec-buttons button{padding:14px 20px;font-size:15px}
-#status{color:#a9b8ce;margin:18px 0;min-height:20px}
-#recordStatus{font-size:12px;color:#e5bd69;margin-top:12px}
-#exitFullscreen{position:absolute;top:14px;right:14px;background:#26334a;color:white;padding:10px 13px}
-#execution:fullscreen{background:##424448}
+
+/* TELA DE EXECUÇÃO — GRAFITE */
+
+#execution {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
+  background: #424448;
+  color: #ffffff;
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  overflow: auto;
+}
+
+#execution.active {
+  display: flex;
+}
+
+.exec-content {
+  width: 100%;
+  max-width: 700px;
+}
+
+.exec-tag {
+  color: #c0c2c6;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 13px;
+}
+
+#execName {
+  font-size: clamp(28px, 6vw, 48px);
+  margin: 25px 0;
+}
+
+#breakMessage {
+  display: none;
+  max-width: 580px;
+  margin: -8px auto 24px;
+  padding: 14px 18px;
+  border: 1px solid #707278;
+  border-radius: 12px;
+  background: #595b5f;
+  color: #ffffff;
+  font-size: clamp(16px, 3vw, 20px);
+  line-height: 1.5;
+}
+
+#clock {
+  font-size: clamp(76px, 17vw, 150px);
+  font-weight: bold;
+  letter-spacing: -5px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: #ffffff;
+}
+
+#progress {
+  color: #d1d3d6;
+  margin: 12px 0 18px;
+}
+
+.progress-track {
+  width: 100%;
+  height: 16px;
+  background: #303236;
+  border-radius: 30px;
+  overflow: hidden;
+  margin: 0 auto 28px;
+  box-shadow: inset 0 2px 5px #0005;
+}
+
+.progress-fill {
+  width: 0%;
+  height: 100%;
+  background: #aeb6c7;
+  border-radius: 30px;
+  transition: width .25s linear;
+}
+
+#progressPercent {
+  color: #c0c2c6;
+  font-size: 13px;
+  margin-top: -20px;
+  margin-bottom: 25px;
+}
+
+#nextTask {
+  color: #c0c2c6;
+  font-size: 13px;
+  text-align: right;
+  margin-top: -15px;
+  margin-bottom: 25px;
+}
+
+#nextTask strong {
+  color: #ffffff;
+  font-weight: normal;
+}
+
+.exec-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.exec-buttons button {
+  padding: 14px 20px;
+  font-size: 15px;
+}
+
+#status {
+  color: #d1d3d6;
+  margin: 18px 0;
+  min-height: 20px;
+}
+
+#recordStatus {
+  font-size: 12px;
+  color: #e5bd69;
+  margin-top: 12px;
+}
+
+#exitFullscreen {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: #595b5f;
+  color: #ffffff;
+  padding: 10px 13px;
+}
+
+#execution:fullscreen {
+  background: #424448;
+}
+
 
 @media(max-width:520px){
  main{padding:12px}
