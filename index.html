@@ -196,7 +196,23 @@ button.danger:hover:not(:disabled) { background: #ffe1e1; box-shadow: none; }
 #plannerPage .task { background: var(--mt-grafite-card); color: white; border: 1px solid #707278; border-radius: 12px; padding: 10px; margin-bottom: 8px; }
 #plannerPage .task:hover { background: #686a6e; }
 #plannerPage .taskname, #plannerPage .task small { color: white; }
-#plannerPage #startButton { width: 100%; min-height: 54px; background: #245C68; color: #ffffff; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; box-shadow: none; }
+
+#plannerPage #startButton {
+  width: 100%;
+  min-height: 54px;
+  background: #245C68;
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+#plannerPage #startButton:hover:not(:disabled) {
+  background: #1B4751;
+  color: #ffffff;
+}
 #plannerPage #startButton:hover:not(:disabled) { background: #e9eaed; color: var(--mt-navy); }
 
 /* Execução: relógio regressivo e tempo real */
