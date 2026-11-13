@@ -45,7 +45,7 @@ button.danger{background:#fee2e2;color:#991b1b}
 .voice-status.error{color:#b42332}
 
 /* TELA DE EXECUÇÃO */
-#execution{display:none;position:fixed;inset:0;width:100%;height:100%;height:100dvh;background:#090d16;color:white;z-index:9999;align-items:center;justify-content:center;text-align:center;padding:24px;overflow:auto}
+#execution{display:none;position:fixed;inset:0;width:100%;height:100%;height:100dvh;background:#424448;color:white;z-index:9999;align-items:center;justify-content:center;text-align:center;padding:24px;overflow:auto}
 #execution.active{display:flex}
 .exec-content{width:100%;max-width:700px}
 .exec-tag{color:#93a4bd;text-transform:uppercase;letter-spacing:2px;font-size:13px}
@@ -63,7 +63,7 @@ button.danger{background:#fee2e2;color:#991b1b}
 #status{color:#a9b8ce;margin:18px 0;min-height:20px}
 #recordStatus{font-size:12px;color:#e5bd69;margin-top:12px}
 #exitFullscreen{position:absolute;top:14px;right:14px;background:#26334a;color:white;padding:10px 13px}
-#execution:fullscreen{background:#090d16}
+#execution:fullscreen{background:##424448}
 
 @media(max-width:520px){
  main{padding:12px}
@@ -273,34 +273,48 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
 }
 
 
-.planner-form{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:10px;
+
+.planner-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  background: #595b5f;
+  padding: 14px;
+  border-radius: 14px;
+  color: #ffffff;
 }
 
-.planner-form .field{
-  min-width:0;
+.planner-form .field {
+  min-width: 0;
 }
 
 .planner-form input,
-.planner-form select{
-  width:100%;
+.planner-form select {
+  width: 100%;
+  background: #ffffff;
+  color: #1e293b;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 10px;
 }
 
 .planner-name,
 .planner-add,
-.planner-form .voice-area{
-  grid-column:1/-1;
+.planner-form .voice-area {
+  grid-column: 1 / -1;
 }
 
-.planner-form .voice-area{
-  padding:10px;
+.planner-form .voice-area {
+  padding: 10px;
+  background: #424448;
+  border-radius: 12px;
+  color: #ffffff;
 }
 
-.planner-form .voice-area button{
-  width:100%;
+.planner-form .voice-area button {
+  width: 100%;
 }
+
 
 .planner-list-heading{
   display:flex;
@@ -412,15 +426,16 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
 }
 
 #plannerPage .task {
-  background: #f8fafc;
-  border: 1px solid #e7ebf2;
+  background: #595b5f;
+  color: #ffffff;
+  border: 1px solid #65676b;
   border-radius: 12px;
   padding: 10px;
   margin-bottom: 8px;
 }
 
 #plannerPage .taskname {
-  color: #1e293b;
+  color: #ffffff;
   font-weight: 600;
 }
 
