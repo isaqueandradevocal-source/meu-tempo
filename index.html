@@ -377,6 +377,65 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
   }
 }
 
+
+/* MEU TEMPO — FORMULÁRIO SIMPLIFICADO */
+#plannerPage .planner-form > .field:has(#taskCategory),
+#plannerPage .planner-form > .field:has(#activitySuggestion),
+#plannerPage .planner-form > .field:has(#taskHistory) {
+  display: none;
+}
+
+#plannerPage .planner-form .voice-area {
+  order: -1;
+  grid-column: 1 / -1;
+}
+
+#plannerPage .planner-form .planner-name,
+#plannerPage .planner-form .planner-add,
+#plannerPage .planner-form > .field:has(#taskMinutes) {
+  grid-column: 1 / -1;
+}
+
+
+/* MEU TEMPO — LISTA E BOTÃO PRINCIPAL */
+
+#plannerPage .planner-task-scroll {
+  max-height: 230px;
+  overflow-y: auto;
+  border-top: 1px solid #e7ebf2;
+  padding-top: 6px;
+}
+
+#plannerPage .task {
+  background: #f8fafc;
+  border: 1px solid #e7ebf2;
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+#plannerPage .taskname {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+#plannerPage #startButton {
+  width: 100%;
+  min-height: 54px;
+  background: #356df3;
+  color: white;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 5px 14px rgba(53,109,243,.2);
+}
+
+#plannerPage .planner-bottom-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 </style>
 </head>
 <body>
@@ -457,7 +516,7 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
 <div id="plannerPage" class="hidden-page">
  <main>
   <section class="panel planner-panel">
-   <h2>Minha programação</h2>
+   <h2>Programação</h2>
 
    <div class="planner-form">
     <div class="field">
@@ -487,7 +546,7 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
     </div>
 
     <div class="voice-area">
-     <button type="button" class="secondary" id="voiceButton" onclick="startVoiceCapture()">🎙️ Cadastrar atividade por voz</button>
+     <button type="button" class="secondary" id="voiceButton" onclick="startVoiceCapture()">🎙️ Falar uma tarefa</button>
      <p id="voiceStatus" class="voice-status" aria-live="polite">Toque no microfone e diga a atividade e o tempo.</p>
     </div>
 
@@ -507,8 +566,7 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
     <button class="planner-add" onclick="addTask()">+ Adicionar atividade</button>
    </div>
 
-   <p class="note">Você decide o que fazer. As sugestões são apenas um apoio.</p>
-
+  
    <div class="planner-list-heading">
     <strong>Minhas tarefas</strong>
     <span>Lista de execução</span>
@@ -521,7 +579,7 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
   </section>
 
   <details class="panel planner-details">
-   <summary>Minhas programações salvas</summary>
+   <summary>Pausas e programações salvas</summary>
    <p class="note">Salve listas para reutilizar em outros dias.</p>
 
    <div class="field">
@@ -549,12 +607,8 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
    </div>
 
    <p class="note" id="scheduleStatus">As programações ficam salvas neste dispositivo.</p>
-  </details>
-
-  <details class="panel planner-details">
-   <summary>Configurações de pausas</summary>
-
-   <div class="settings">
+  
+    <div class="settings">
     <label>Pausa curta (min)<br><input id="shortBreak" type="number" min="0" value="2"></label>
     <label>Pausa longa (min)<br><input id="longBreak" type="number" min="0" value="5"></label>
     <label>Limite (min)<br><input id="breakLimit" type="number" min="1" value="15"></label>
@@ -564,7 +618,7 @@ button.danger:hover:not(:disabled){background:#ffe1e1;box-shadow:none}
   </details>
 
   <div class="planner-bottom-actions">
-   <button onclick="startProgram()" id="startButton">▶ Iniciar programação</button>
+   <button onclick="startProgram()" id="startButton">▶Começar programação</button>
    <button class="secondary" onclick="clearTasks()">Limpar tarefas</button>
   </div>
  </main>
